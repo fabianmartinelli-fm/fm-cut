@@ -1635,3 +1635,121 @@ button.tl-chip:disabled { cursor: default; }
 #flashOptsGroup .flash-opts { flex-direction: column; flex-wrap: nowrap; gap: 10px; }
 #flashOptsGroup .flash-chips { flex-direction: column; align-items: stretch; }
 #flashOptsGroup .flash-chip { justify-content: flex-start; }
+
+/* headline + caption columns start at the TOP of the card (the title only
+   sits over the narrow left column), and their grids pack tighter — together
+   that removes the scrollbar the caption column used to need */
+.ws-top > .setup .setup-inner {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "head hl cap fx side"
+    "edit hl cap fx side"
+    "acc  hl cap fx side";
+}
+.ws-top > .setup #optHeadline,
+.ws-top > .setup #optCaptions { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 7px; }
+.ws-top > .setup .opt-preview.cap,
+.ws-top > .setup .opt-preview.hlbox { height: 58px; }
+.ws-top > .setup .setup-head h2 { font-size: 15px; line-height: 1.25; }
+
+/* ---------- responsive Estilo card ----------
+   Measured, not guessed (1920×1080: 5 columns, nothing scrolls; 1440×800: the
+   caption column was 191px wide and 325px over). The card is a size container;
+   its own width picks the layout, whatever the window or pane is doing. */
+.ws-top > .setup { container-type: inline-size; container-name: estilo; }
+.style-tabs { display: none; }
+.style-tabs button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.style-tabs button.on { color: var(--text); background: rgba(139, 92, 246, 0.24); }
+
+/* medium: left column | one tabbed pane (headline / legenda / transição) | elements */
+@container estilo (max-width: 1180px) {
+  .setup-inner {
+    grid-template-columns: auto minmax(0, 1fr) 220px !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    grid-template-areas:
+      "head tabs side"
+      "edit pane side"
+      "acc  pane side" !important;
+  }
+  .style-tabs {
+    grid-area: tabs;
+    display: flex;
+    gap: 4px;
+    align-self: start;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    padding: 3px;
+    width: max-content;
+  }
+  .setup-group:has(#optHeadline),
+  .setup-group:has(#optCaptions),
+  #flashOptsGroup { grid-area: pane !important; display: none; }
+  .setup-inner:not([data-pane]) .setup-group:has(#optHeadline),
+  .setup-inner[data-pane="hl"] .setup-group:has(#optHeadline),
+  .setup-inner[data-pane="cap"] .setup-group:has(#optCaptions) { display: flex; }
+  .setup-inner[data-pane="fx"] #flashOptsGroup:not(.hidden) { display: flex; }
+  #flashOptsGroup .flash-opts { flex-direction: row !important; flex-wrap: wrap !important; }
+  #flashOptsGroup .flash-chips { flex-direction: row !important; }
+  .setup-group:has(#optHeadline) .group-head,
+  .setup-group:has(#optCaptions) .group-head { display: none; } /* the tab names it */
+}
+/* narrow: the left column goes on top as a row, pane below, elements beside */
+@container estilo (max-width: 760px) {
+  .setup-inner {
+    grid-template-columns: minmax(0, 1fr) 200px !important;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) !important;
+    grid-template-areas:
+      "head side"
+      "edit side"
+      "acc  side"
+      "tabs side"
+      "pane side" !important;
+  }
+}
+
+/* On Fase 2 the style card is what the user is working in: give it height by
+   capping the timeline lower on short screens (it scrolls inside). */
+@media (max-height: 950px) {
+  .stage:has(#styleSetup:not(.hidden)) .editor-col { max-height: 32vh; }
+}
+/* element names wrap instead of clipping in the narrower right column */
+.setup-side .chk-name { white-space: normal; line-height: 1.25; }
+.setup-side > .setup-group { overflow-x: hidden; }
+@container estilo (max-width: 1180px) {
+  .setup-inner { grid-template-columns: auto minmax(0, 1fr) 236px !important; }
+}
+
+/* short screens (≤800px tall — 13" laptops, 720p): everything a notch denser
+   so no primary button (Processar vídeos, Confirmar) ever scrolls out of view */
+@media (max-height: 800px) {
+  .stage:has(#styleSetup:not(.hidden)) .editor-col { max-height: 28vh; }
+  .format-card { gap: 7px; padding: 10px; }
+  .format-opt { padding: 5px 9px; }
+  .format-sub { display: none; }
+  .format-card textarea { min-height: 0; height: 34px; }
+  .ws-top > .setup .opt-preview.cap,
+  .ws-top > .setup .opt-preview.hlbox { height: 48px; }
+  .ws-top > .setup .opt-grid { --mock-h: 84px; }
+  .setup-side .chk { padding: 5px 9px 5px 8px; }
+  .setup-side .setup-actions textarea { min-height: 0; height: 34px; }
+  .ws-top > .setup { padding: 10px 14px; }
+}
+/* the format card keeps its button pinned: the option list scrolls, not the card */
+.format-card { overflow: hidden; }
+.format-opts { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* narrow tier re-declared LAST: the medium rule above also matches ≤760px and,
+   coming later, used to win and squeeze the elements column to ~90px */
+@container estilo (max-width: 760px) {
+  .setup-inner { grid-template-columns: minmax(0, 1fr) 210px !important; }
+  .setup-side .chk-name { font-size: 11.5px; }
+}

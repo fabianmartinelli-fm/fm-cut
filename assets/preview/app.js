@@ -1300,6 +1300,13 @@ function renderSetup() {
     el('div', 'chk-name', row).textContent = e.name;
     if (e.id === 'flashCut') {
       $('flashOptsGroup').classList.toggle('hidden', !on);
+      // medium-width card: no "Transição" tab while the flash is off
+      $('styleTabs').querySelector('[data-pane="fx"]').hidden = !on;
+      const inner = document.querySelector('#styleSetup .setup-inner');
+      if (!on && inner.dataset.pane === 'fx') {
+        inner.dataset.pane = 'hl';
+        $('styleTabs').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.pane === 'hl'));
+      }
       const f = S.style.flash;
       const box = $('flashOpts');
       box.innerHTML = '';
@@ -1331,6 +1338,15 @@ function renderSetup() {
 
   updateSummary();
 }
+
+// medium-width Estilo card: one pane at a time (headline / caption / transition)
+$('styleTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pane]');
+  if (!b) return;
+  document.querySelector('#styleSetup .setup-inner').dataset.pane = b.dataset.pane;
+  document.querySelectorAll('#styleTabs button').forEach((x) => x.classList.toggle('on', x === b));
+  renderSetup(); // the caption demos re-measure their (now wider) boxes
+});
 
 $('styleSetup').addEventListener('click', (e) => {
   // the accent controls manage themselves (live, no rebuild) — keep the card
