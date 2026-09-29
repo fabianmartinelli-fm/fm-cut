@@ -1,0 +1,12 @@
+# environments and build metadata
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# secrets — optional API keys live here, never commit it
+.env
+
+# local tooling
+node_modules/
+.DS_Store
