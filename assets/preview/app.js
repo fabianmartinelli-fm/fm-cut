@@ -12,7 +12,7 @@
    a programmatic `.click()` worked, which is what makes it confusing to diagnose)
    and the needle jumped to 0, since the gutter sits left of t=0.
 */
-/* FM Cut preview (FM Solutions fork of Edvid) — interactive editing timeline.
+/* Editor de Vídeos com IA (FM Solutions — skill /fm-cut, fork of Edvid) — interactive editing timeline.
  * IMMUTABLE app: everything per-session comes from /api/state (state.json,
  * edl.json) + /gen/* (waveform, thumbs) + /media/* (video, captions, edit-data).
  * User adjustments are POSTed to /api/save → <edit>/preview_edits.json and
@@ -44,7 +44,7 @@
  *    editing style / caption style / edit elements cannot be skipped. It saves to
  *    <edit>/preview_style.json (never preview_edits.json — different screens,
  *    different moments, one would clobber the other).
- *  - The Postagem tab (Fase 4) is the LAST step: the skill writes <edit>/post.json
+ *  - The Postagem tab (Fase 3) is the LAST step: the skill writes <edit>/post.json
  *    (per-network caption, title, hashtags, keywords) and sets state.post. The
  *    user edits here; "Salvar" ships the edits to <edit>/preview_post.json — its
  *    own file again, for the same reason as the style pick.
@@ -83,7 +83,7 @@ const ICON = {
 };
 
 /* ---------- style catalog (the Fase 1 → Fase 2 gate) ----------
- * The one place that knows which looks FM Cut can build. It is APP-level, not
+ * The one place that knows which looks the Editor de Vídeos com IA can build. It is APP-level, not
  * session-level: a new editing style or caption style is a new entry here plus
  * its implementation in the track reference — never a per-session UI.
  * The user's pick ships to <edit>/preview_style.json; the skill reads it once,
@@ -818,7 +818,7 @@ async function applyState(data) {
   S.savedPending = !!data.hasPendingEdits;
   S.music = data.music || {};
 
-  $('projectName').textContent = S.state.project || 'FM Cut';
+  $('projectName').textContent = S.state.project || 'Editor de Vídeos com IA';
   $('stateMessage').textContent = S.state.message || '';
 
   const ranges = (data.edl && data.edl.ranges) || [];
@@ -2000,7 +2000,7 @@ function toast(msg, ms) {
   toastTimer = setTimeout(() => t.classList.add('hidden'), ms || 3000);
 }
 
-// ---------- Postagem (Fase 4) ----------
+// ---------- Postagem (Fase 3) ----------
 // post.json (written by the skill):
 //   {platforms:[{id,name,limit,titleLimit?,title?,caption,hashtags:[]}],
 //    keywords:[], notes:[]}
@@ -2178,7 +2178,11 @@ function mediaCard(url, name, sub, opts = {}) {
   const thumb = opts.video
     ? `<video class="media-thumb" src="${url}#t=1" muted preload="metadata"></video>`
     : `<img class="media-thumb" src="${url}" alt="" loading="lazy">`;
-  const del = opts.slug ? `<button class="media-del" data-slug="${escHtml(opts.slug)}" title="Remover da biblioteca">✕</button>` : '';
+  const del = opts.slug
+    ? `<button class="media-del" data-slug="${escHtml(opts.slug)}" title="Remover da biblioteca">✕</button>`
+    : opts.removeScope
+      ? `<button class="media-del" data-remove="${opts.removeScope}" data-name="${escHtml(name)}" title="Remover do projeto (vai para a Lixeira)">✕</button>`
+      : '';
   const ord = opts.order ? `<span class="media-order">${opts.order}</span>` : '';
   const drag = opts.dragName ? ` draggable="true" data-src="${escHtml(opts.dragName)}"` : '';
   return `<div class="media-card${opts.logo ? ' logo' : ''}"${drag} title="${escHtml(opts.dragName ? `${name} — arraste para mudar a ordem` : name)}">${thumb}${ord}${del}
@@ -2204,10 +2208,10 @@ function renderMedia() {
     const prj = S.media.project || [];
     html += `<div><div class="media-group-title">Vídeos brutos${src.length > 1 ? ' · arraste para ordenar' : ''}</div>${src.length
       ? `<div class="media-grid">${src.map((v, i) => mediaCard(v.url, v.name, mb(v.size),
-          { video: true, order: src.length > 1 ? i + 1 : 0, dragName: src.length > 1 ? v.name : '' })).join('')}</div>`
+          { video: true, order: src.length > 1 ? i + 1 : 0, dragName: src.length > 1 ? v.name : '', removeScope: 'source' })).join('')}</div>`
       : '<p class="media-empty">Importe o vídeo gravado para começar.</p>'}</div>`;
     html += `<div><div class="media-group-title">Imagens deste vídeo</div>${prj.length
-      ? `<div class="media-grid">${prj.map((m) => mediaCard(m.url, m.name, mb(m.size), { video: m.kind === 'video' })).join('')}</div>`
+      ? `<div class="media-grid">${prj.map((m) => mediaCard(m.url, m.name, mb(m.size), { video: m.kind === 'video', removeScope: 'project' })).join('')}</div>`
       : '<p class="media-empty">Prints, fotos ou gráficos que o Claude pode usar nesta edição.</p>'}</div>`;
   }
   $('mediaList').innerHTML = html;
@@ -2276,6 +2280,15 @@ document.querySelectorAll('.media-tab').forEach((t) => t.addEventListener('click
 $('mediaList').addEventListener('click', async (e) => {
   const b = e.target.closest('.media-del');
   if (!b) return;
+  if (b.dataset.remove) {
+    const nm = b.dataset.name;
+    if (!confirm(`Remover "${nm}" do projeto?\n\nO arquivo vai para a Lixeira — dá para recuperar de lá.`)) return;
+    const r = await (await fetch('/api/media/remove', { method: 'POST', body: JSON.stringify({ scope: b.dataset.remove, name: nm }) })).json();
+    toast(r.ok ? `Removido ✓ (${r.movedTo})` : (r.error || 'Não consegui remover'), 3500);
+    S.mediaSig = null;
+    loadMedia();
+    return;
+  }
   const item = (S.media.library || []).find((l) => l.slug === b.dataset.slug);
   if (!confirm(`Remover a marca "${item ? item.name : b.dataset.slug}" da biblioteca?`)) return;
   await fetch('/api/library/delete', { method: 'POST', body: JSON.stringify({ slug: b.dataset.slug }) });

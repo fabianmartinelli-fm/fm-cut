@@ -1,4 +1,4 @@
-/* FM Cut preview (FM Solutions fork of Edvid) — dark glass on FM Solutions brand:
+/* Editor de Vídeos com IA preview (FM Solutions fork of Edvid) — dark glass on FM Solutions brand:
    Deep Navy #0D1B3E, Primary Blue #2B5EA7 → Purple #8B5CF6, Light Purple #A78BFA,
    Inter. Teal/olive stay as TRACK identity colours (captions/audio), not chrome. */
 :root {
@@ -71,10 +71,11 @@ header {
 /* product tag next to the FM Solutions logo — brand light purple, not gradient
    text (gradient type is the tell of a template) */
 .product-tag {
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 3px;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
   color: var(--brand-light);
+  white-space: nowrap;
   padding-left: 12px;
   border-left: 1px solid rgba(167, 139, 250, 0.35);
   line-height: 24px;
@@ -1263,7 +1264,7 @@ button.tl-chip:disabled { cursor: default; }
 }
 .tl-chip.ghost { opacity: 0.55; }
 
-/* ---------- Postagem (Fase 4: publication caption) ----------
+/* ---------- Postagem (Fase 3: publication caption) ----------
    Same scroll surface as the Estilo tab (.setup). Everything is fed by
    <edit>/post.json through renderPost() in app.js. */
 .post-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }

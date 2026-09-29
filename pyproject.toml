@@ -1,7 +1,7 @@
 [project]
 name = "fm-cut"
 version = "1.0.0"
-description = "FM Cut — conversation-driven video editor skill for Claude Code, Codex and Gemini (FM Solutions fork of Edvid)"
+description = "Editor de Vídeos com IA (fm-cut) — conversation-driven video editor skill for Claude Code, Codex and Gemini (FM Solutions fork of Edvid)"
 license = { file = "LICENSE" }
 # Capped below 3.14: torch publishes no cp314 wheels, which silently broke BOTH
 # torch-backed extras (matting, whisperx) for anyone whose uv picked 3.14. The

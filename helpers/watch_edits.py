@@ -5,7 +5,7 @@ Three files, all written by the UI and none able to reach the chat on its own:
   - preview_edits.json — timeline adjustments and correction markers
   - preview_style.json — the Fase 1 → Fase 2 gate: editing style, caption style,
     edit elements
-  - preview_post.json  — caption edits from the Postagem tab (Fase 4)
+  - preview_post.json  — caption edits from the Postagem tab (Fase 3)
 
 Run this under the Monitor tool so every save notifies the session automatically:
 
@@ -121,7 +121,7 @@ def style_digest(p: Path) -> str:
 
 
 def post_digest(p: Path) -> str:
-    """Caption edits from the Postagem tab (Fase 4)."""
+    """Caption edits from the Postagem tab (Fase 3)."""
     try:
         d = json.loads(p.read_text())
     except (OSError, json.JSONDecodeError) as e:

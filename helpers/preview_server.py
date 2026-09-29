@@ -10,7 +10,7 @@ per-session it is fed by data only:
                                and re-renders. The UI never touches edl.json.
   - <edit>/preview_style.json  WRITTEN BY THE UI at the Fase 1 → Fase 2 gate:
                                editing style, caption style, edit elements.
-  - <edit>/post.json           written by the skill (Fase 4): publication caption
+  - <edit>/post.json           written by the skill (Fase 3): publication caption
                                per network — the Postagem tab shows it.
   - <edit>/preview_post.json   WRITTEN BY THE UI when the user saves caption edits.
 
@@ -257,6 +257,9 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/project":
             self._project_save()
             return
+        if route == "/api/media/remove":
+            self._media_remove()
+            return
         if route == "/api/process":
             self._process()
             return
@@ -324,6 +327,52 @@ class Handler(BaseHTTPRequestHandler):
         self._write_json("project_setup.json", setup)
         self._json({"ok": True, "setup": setup})
 
+    def _raw_videos(self, raw: Path, setup: dict) -> list[Path]:
+        """Raw footage in the project folder. Excludes renders the user SAVED there
+        with "Salvar vídeo" (setup["exports"]) — a finished edit sitting next to
+        the footage is not footage, and listing it invited re-editing the output."""
+        if not raw.is_dir():
+            return []
+        skip = set(setup.get("exports", []))
+        return [p for p in raw.iterdir()
+                if p.is_file() and not p.name.startswith(".")
+                and p.suffix.lower() in self.VIDEO_EXT and p.name not in skip]
+
+    def _media_remove(self) -> None:
+        """Remove a file from the project. It goes to the system TRASH (macOS
+        Finder), never a hard delete — raw footage is irreplaceable. Elsewhere it
+        moves into a hidden .lixeira-fm-cut/ next to it."""
+        body = self._read_body()
+        if body is None:
+            return
+        scope = body.get("scope")
+        base = self._raw_dir() if scope == "source" else self.root / "media" if scope == "project" else None
+        p = self._safe(base, Path(str(body.get("name", ""))).name) if base else None
+        if not p or not p.is_file():
+            self._json({"error": "arquivo não encontrado"}, 404)
+            return
+        try:
+            if sys.platform == "darwin":
+                r = subprocess.run(["osascript", "-e",
+                                    f'tell application "Finder" to delete (POSIX file "{p}")'],
+                                   capture_output=True, text=True)
+                if r.returncode:
+                    raise OSError(r.stderr.strip() or "Finder recusou")
+                where = "Lixeira"
+            else:
+                bin_ = p.parent / ".lixeira-fm-cut"
+                bin_.mkdir(exist_ok=True)
+                shutil.move(str(p), str(bin_ / p.name))
+                where = str(bin_)
+        except OSError as e:
+            self._json({"error": f"não consegui remover: {e}"}, 500)
+            return
+        if scope == "source":
+            setup = self._setup()
+            setup["order"] = [n for n in setup.get("order", []) if n != p.name]
+            self._write_json("project_setup.json", setup)
+        self._json({"ok": True, "movedTo": where})
+
     def _process(self) -> None:
         """"Processar vídeos": hand the ordered footage + format to the agent."""
         body = self._read_body()
@@ -331,11 +380,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         setup = self._setup()
         raw = self._raw_dir()
-        order = [n for n in setup.get("order", []) if (raw / n).is_file()]
-        rest = sorted(p.name for p in raw.iterdir()
-                      if p.is_file() and p.suffix.lower() in self.VIDEO_EXT and p.name not in order) \
-            if raw.is_dir() else []
-        files = order + rest
+        vids = {p.name for p in self._raw_videos(raw, setup)}
+        order = [n for n in setup.get("order", []) if n in vids]
+        files = order + sorted(vids - set(order))
         if not files:
             self._json({"error": "importe pelo menos um vídeo bruto antes de processar"}, 400)
             return
@@ -349,8 +396,7 @@ class Handler(BaseHTTPRequestHandler):
         raw = self._raw_dir()
         setup = self._setup()
         rank = {n: i for i, n in enumerate(setup.get("order", []))}
-        vids = [p for p in raw.iterdir()
-                if p.is_file() and p.suffix.lower() in self.VIDEO_EXT] if raw.is_dir() else []
+        vids = self._raw_videos(raw, setup)
         vids.sort(key=lambda p: (rank.get(p.name, len(rank)), p.name))
         sources = [{"name": p.name, "url": f"/raw/{quote(p.name)}", "size": p.stat().st_size}
                    for p in vids]
@@ -475,6 +521,12 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as e:
             self._json({"error": f"não consegui salvar: {e}"}, 500)
             return
+        if dest.parent.resolve() == dest_dir.resolve():
+            # saved next to the footage: remember it is an OUTPUT, so the Mídia
+            # gallery and "Processar vídeos" never treat it as raw footage
+            setup = self._setup()
+            setup["exports"] = sorted(set(setup.get("exports", [])) | {dest.name})
+            self._write_json("project_setup.json", setup)
         self._json({"ok": True, "path": str(dest)})
 
     def _raw_dir(self) -> Path:

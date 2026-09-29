@@ -3,7 +3,7 @@ name: fm-cut-install
 description: Verify or repair an FM Cut install (Claude Code, Codex, or any agent with a skills directory). The user installs with one command from README.md; this file is for checking that it worked and fixing what didn't.
 ---
 
-# FM Cut install
+# Editor de Vídeos com IA (fm-cut) install
 
 Use this file only for first-time setup, verification or repair. For daily
 editing, read `SKILL.md`. Always read `helpers/` — that's where the scripts live.
@@ -33,7 +33,7 @@ editing, read `SKILL.md`. Always read `helpers/` — that's where the scripts li
 4. **Node.js 18+** and the `remotion-best-practices` skill — Phase 2 only. The
    installer fetches that skill too.
 **No key is part of the install.** WhisperX transcribes locally, and Phase 1 needs
-nothing else. Phase 2/3 have a few optional keys for illustrative images (the AI
+nothing else. Phase 2 have a few optional keys for illustrative images (the AI
 soundtrack needs none — it runs locally with ACE-Step 1.5); they live in the track reference and are asked for only when the
 user reaches that feature. Never raise the subject during install — it makes a
 keyless tool look like it needs an account.

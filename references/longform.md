@@ -1,7 +1,7 @@
 # LONGFORM track (YouTube 16:9) — cut philosophy + Phase 2 + captions reference
 
 Read this file when the source is horizontal / the user says YouTube, longform,
-tutorial or vlog. Reuses the whole Phase-1 engine and Phase-3 soundtrack —
+tutorial or vlog. Reuses the whole Phase-1 engine and the Phase-2 soundtrack —
 what changes is the cut intent, output spec, captions, and the Phase-2 visuals.
 
 ## Deltas vs short-form
@@ -83,7 +83,7 @@ Never edit `src/Main.tsx` — it's data-driven; the JSON is the edit.
 
 ---
 
-## Anti-patterns (Fase 2/3)
+## Anti-patterns (Fase 2)
 
 **Espelhados de `shortform.md` — mudou um, muda o outro.** Valem para os dois
 tracks; os que dependem da aba Estilo ficaram só no short-form, que é onde ela
@@ -104,7 +104,7 @@ existe.
 
 ---
 
-## Helpers de Fase 2/3
+## Helpers de Fase 2
 
 **Brand logos and the user's own images:** same rules as short-form. Use the
 library first (`brand_library.py find`), then `<edit>/media/`, then the official
@@ -126,5 +126,5 @@ pelo caminho sem chave e diga o que muda.
 | `GOOGLE_API_KEY` + `GOOGLE_CSE_ID` | marcas, pessoas e logos específicos | Wikimedia é o fallback |
 
 A trilha com IA não usa chave: é gerada localmente e de graça com ACE-Step 1.5
-(`helpers/music_local.py`). Ver "Phase 3 — soundtrack" em `references/shortform.md`.
+(`helpers/music_local.py`). Ver "Soundtrack (part of the Fase-2 delivery)" em `references/shortform.md`.
 

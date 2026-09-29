@@ -339,7 +339,7 @@ def hint(tool: str) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser(
         prog="fm-cut-install",
-        description="Instala a skill FM Cut no seu agente (Claude Code, Codex, …).")
+        description="Instala a skill Editor de Vídeos com IA (/fm-cut) no seu agente (Claude Code, Codex, …).")
     ap.add_argument("--ref", default="main", help="branch ou tag (padrão: main)")
     ap.add_argument("--target", default=None,
                     help="pasta de skills específica, em vez de detectar")
@@ -353,7 +353,7 @@ def main() -> None:
                          "primeira vez que você pedir trilha.")
     args = ap.parse_args()
 
-    log("FM Cut — instalação")
+    log("Editor de Vídeos com IA — instalação")
     log()
 
     targets = detect_targets(args.target)
@@ -497,11 +497,11 @@ def main() -> None:
             log("  ! não concluiu — a skill tenta de novo na primeira trilha pedida")
 
     if ja_existia:
-        log("FM Cut atualizada! Você está na última versão publicada pela FM Solutions.")
+        log("Editor de Vídeos com IA atualizado! Você está na última versão publicada pela FM Solutions.")
         log()
         log("Reinicie o agente para ele carregar a nova versão.")
     else:
-        log(f"Tudo pronto! A FM Cut está instalada e pronta para usar no {onde}.")
+        log(f"Tudo pronto! O Editor de Vídeos com IA está instalado e pronto para usar no {onde}.")
         log()
         log("Reinicie o agente e abra uma nova sessão chamando /fm-cut.")
         log()

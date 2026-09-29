@@ -1,4 +1,4 @@
-# PHASE 4 — Publication caption (always the last step)
+# PHASE 3 — Publication caption (always the last step)
 
 Read this after `final.mp4` is rendered. Every edit ends with the text the video
 is published with: per-network caption, title where the network has one,

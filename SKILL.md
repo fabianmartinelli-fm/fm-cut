@@ -1,20 +1,20 @@
 ---
 name: fm-cut
-description: FM Cut — FM Solutions' conversation-driven video editor (a fork of Edvid). Conversation-driven video editing for short-form vertical (Reels, TikTok, Shorts) and longform horizontal video. Use when asked to cut, grade, caption, add graphics, create a soundtrack, transcribe, or prepare video edits. Run Phase 1 (audio-led clean cut and grade), obtain approval, then build Phase 2/3 Remotion visuals and audio, and finish with the Phase 4 publication caption.
+description: Editor de Vídeos com IA (skill fm-cut) — FM Solutions' conversation-driven video editor (a fork of Edvid). Conversation-driven video editing for short-form vertical (Reels, TikTok, Shorts) and longform horizontal video. Use when asked to cut, grade, caption, add graphics, create a soundtrack, transcribe, or prepare video edits. Run Phase 1 (audio-led clean cut and grade), obtain approval, then build Phase 2 Remotion visuals and audio, and finish with the Phase 3 publication caption.
 ---
 
-# FM Cut
+# Editor de Vídeos com IA (`/fm-cut`)
 
 > Editor de vídeo da **FM Solutions**, baseado no [Edvid](https://github.com/fillrochaa/edvid)
 > (Creator Factory, licença MIT). O método, a estrutura e os helpers vêm do Edvid; as
-> adaptações — Fase 4 (legenda da postagem), identidade visual FM no preview e ajustes do
+> adaptações — Fase 3 (legenda da postagem), identidade visual FM no preview e ajustes do
 > fluxo, trilha com IA local e gratuita (ACE-Step 1.5) no lugar do Treblo — são da
 > FM Solutions. Instalador: `fm_cut_install.py`. As chaves `edvid.*` do navegador
 > ficam como no original, para não perder preferências de quem já usava.
 
 ## Principle
 
-1. **Two phases, one gate between them.** PHASE 1 is the clean cut + color grade; PHASE 2 is captions, graphics and images. (Hard Rule 1 enforces the gate.) Every edit then ENDS with PHASE 4: the publication caption (see below).
+1. **Two phases, one gate between them.** PHASE 1 is the clean cut + color grade; PHASE 2 is captions, graphics and images. (Hard Rule 1 enforces the gate.) Every edit then ENDS with PHASE 3: the publication caption (see below).
 2. **LLM reasons from raw transcript + on-demand visuals.** The only derived artifact that earns its keep is the packed phrase-level transcript (`takes_packed.md`). Everything else you derive at decision time.
 3. **Audio is primary, visuals follow.** Cut candidates come from speech boundaries and silence gaps.
 4. **Ask → confirm → execute → iterate → persist.** Never touch the cut until the user confirms the strategy in plain English.
@@ -61,9 +61,9 @@ cached, so reuse an approved EDL and skip `cut.mp4`/preview.
     ├── cut.mp4                  ← PHASE 1 output: clean graded cut (approval artifact)
     ├── verify/                  ← montages / flagged-boundary views
     ├── captions.srt + chapters.txt   ← longform deliverables
-    ├── final.mp4                ← delivered render (Phase 2 + 3, loudnorm'd)
-    ├── post.json                ← PHASE 4: publication caption per network (Postagem tab)
-    └── remotion/                ← Remotion project (Phase 2 + 3)
+    ├── final.mp4                ← delivered render (Phase 2, loudnorm'd, with soundtrack)
+    ├── post.json                ← PHASE 3: publication caption per network (Postagem tab)
+    └── remotion/                ← Remotion project (Phase 2)
         ├── public/              ← cut.mp4, edit-data.json (THE edit), captions.json,
         │                          track.json, segments.json, pexels/ web/ brand/, sfx/, trilha.mp3
         └── src/                 ← immutable template code + CustomGraphics.tsx
@@ -77,7 +77,7 @@ First-time install lives in `install.md`. On cold start just verify:
 - A `/UNALIGNED` suffix in `_transcription_backend` means no wav2vec2 model existed for the detected language, so the word times are the decoder's own — coarse, and not safe for Phase-2 karaoke captions. Say so if it happens.
 - `ffmpeg` + `ffprobe` on PATH; Python deps (`uv sync`); Node 18+ for Phase 2. `yt-dlp` ships with the Python deps, so URL sources need no extra install.
 - The `remotion-best-practices` skill for Phase-2 domain knowledge (install from https://github.com/remotion-dev/skills if missing).
-- Phase 2/3 can use optional API keys (illustrative images, AI soundtrack). They are listed in the track reference, asked for lazily when the feature is first used, and never at install time. The AI soundtrack needs NO key: it runs locally and for free with ACE-Step 1.5 (`helpers/music_local.py`, MIT). When `musicAI` is ticked on the Estilo tab, start its one-time setup at the gate if needed, and ship the soundtrack inside the Fase-2 `final.mp4`. **Nothing in Phase 1 needs a key.**
+- Phase 2 can use optional API keys (illustrative images, AI soundtrack). They are listed in the track reference, asked for lazily when the feature is first used, and never at install time. The AI soundtrack needs NO key: it runs locally and for free with ACE-Step 1.5 (`helpers/music_local.py`, MIT). When `musicAI` is ticked on the Estilo tab, start its one-time setup at the gate if needed, and ship the soundtrack inside the Fase-2 `final.mp4`. **Nothing in Phase 1 needs a key.**
 
 Helpers live in `helpers/`, resolved relative to this SKILL.md (usually `~/.claude/skills/fm-cut/` or `~/.codex/skills/fm-cut/`, or a symlink/junction pointing there). Run them as `uv run python helpers/<name>.py` — a bare `python` misses the `.venv` that `uv sync` builds.
 
@@ -98,7 +98,7 @@ Phase 1:
 - **`contact_sheet.py <video> --times t1 t2 … -o sheet.png`** — N frames in one labeled grid; the way to eyeball several moments **you already know**.
 - **`watch_video.py <video> [--mode scene|keyframe|uniform] [--times t1 t2 …] [--start/--end] [--max-frames 24]`** — "what is IN this footage?" when you *don't* know where to look: scene detection + perceptual dedup → labeled contact sheets in `edit/verify/watch_<stem>/`, one Read per sheet. For visual inventory of unknown material, and for surveying `cut.mp4` beyond verify_cut's numbers. `--times` pins transcript-cue frames: deictic moments from `takes_packed.md` ("olha isso", "como você pode ver") are LOW visual change and invisible to scene detection — pin them to decide B-roll/callout/zoom placement in Phase 2.
 
-Phase 2/3 helpers (captions, face tracking, image search, music) are listed in
+Phase 2 helpers (captions, face tracking, image search, music) are listed in
 the track reference you load after the gate.
 
 Interface:
@@ -416,7 +416,7 @@ starts sounding like a different microphone.
 
 ---
 
-# PHASE 2 + 3 — read the track reference (after the gate)
+# PHASE 2 — read the track reference (after the gate)
 
 The cut is approved and the user picked the style in the UI (`preview_style.json`)
 → load **one** file and build exactly what was picked:
@@ -426,7 +426,7 @@ The cut is approved and the user picked the style in the UI (`preview_style.json
 
 Both tracks: scaffold with one `cp -R` of the template, describe the video in `public/edit-data.json`, verify with montage stills, render, loudnorm, deliver `edit/final.mp4`. Load the `remotion-best-practices` skill when writing any Remotion code (CustomGraphics).
 
-# PHASE 4 — Publication caption (always last, every edit)
+# PHASE 3 — Publication caption (always last, every edit)
 
 Right after `final.mp4` is delivered, **read `references/post-caption.md`** and
 write `<edit>/post.json`: caption per network (Instagram, TikTok, YouTube Shorts;

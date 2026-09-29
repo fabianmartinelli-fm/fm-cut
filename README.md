@@ -1,4 +1,6 @@
-# FM Cut
+# Editor de Vídeos com IA
+
+**Skill `/fm-cut` · FM Solutions**
 
 **Editor de vídeo por conversa, gratuito e local.** Você coloca o material bruto
 numa pasta, abre seu agente de IA ali dentro e diz *"edita isso num Reels"*. Ele
@@ -9,7 +11,7 @@ legenda da postagem para cada rede.
 Funciona em **short-form vertical** (Reels, TikTok, Shorts) e **longform
 horizontal** (YouTube), com **Claude Code**, **Codex** e **Gemini/Antigravity**.
 
-> O FM Cut é um fork da [FM Solutions](https://fmsolutions.ai) do
+> O Editor de Vídeos com IA é um fork da [FM Solutions](https://fmsolutions.ai) do
 > **[Edvid](https://github.com/fillrochaa/edvid)**, criado pela **Creator Factory**
 > (MIT). O método, a base da skill e o preview vêm do Edvid, e o crédito é deles.
 > As adaptações listadas abaixo são nossas. Detalhes em [NOTICE.md](NOTICE.md).
@@ -33,7 +35,7 @@ horizontal** (YouTube), com **Claude Code**, **Codex** e **Gemini/Antigravity**.
 | Adaptação | O que faz |
 |---|---|
 | **Trilha com IA local e gratuita** | Troca o Treblo (pago, com conta) pelo [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5), licença MIT, que roda no Mac (Apple Silicon), NVIDIA, AMD e Intel. A trilha entra no vídeo final da Fase 2, sem uma etapa separada depois. |
-| **Fase 4: legenda da postagem** | Toda edição termina com a legenda de Instagram, TikTok, YouTube Shorts (com título) e LinkedIn, mais hashtags e palavras-chave de busca, na aba **Postagem** do preview. Lá dá para editar, tirar e pôr hashtags e copiar com um clique. |
+| **Fase 3: legenda da postagem** | Toda edição termina com a legenda de Instagram, TikTok, YouTube Shorts (com título) e LinkedIn, mais hashtags e palavras-chave de busca, na aba **Postagem** do preview. Lá dá para editar, tirar e pôr hashtags e copiar com um clique. |
 | **Identidade visual FM Solutions** | Preview com a paleta navy/azul/roxo e tipografia Inter. |
 | **Legenda empilhada na tela dividida** | Nos trechos de tela dividida, a legenda sobe para a emenda da tela em vez de ficar em cima do rosto. |
 
@@ -66,7 +68,7 @@ oficial: `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 **Feche e reabra o terminal** depois de instalar. Programas novos só aparecem
 numa janela nova.
 
-### 2. Instale o FM Cut (um comando)
+### 2. Instale o Editor de Vídeos com IA (um comando)
 
 ```bash
 uv run https://raw.githubusercontent.com/fabianmartinelli-fm/fm-cut/main/fm_cut_install.py
@@ -77,7 +79,7 @@ agente você usa, instala a skill e a skill do Remotion, instala as dependência
 e confere `ffmpeg`, `node` e `uv` no fim.
 
 **Quer a trilha com IA já instalada?** Acrescente `--music`. Isso baixa o
-ACE-Step 1.5 e os modelos, cerca de 10 GB uma vez só. Sem essa opção, o FM Cut
+ACE-Step 1.5 e os modelos, cerca de 10 GB uma vez só. Sem essa opção, o Editor de Vídeos com IA
 instala na primeira vez que você pedir trilha.
 
 ```bash
@@ -100,15 +102,17 @@ Rode o mesmo comando de novo.
 Tudo o que é gerado vai para a subpasta `edit/`. Seus arquivos originais não são
 tocados.
 
-### As 4 fases
+### As 3 fases
 
-1. **Corte limpo.** Melhores tomadas, sem respiros nem erros, cor corrigida. →
+1. **Corte.** Na aba Corte você importa os vídeos (arraste para ordenar),
+   escolhe o formato de saída (9:16, 16:9, 4:5, 1:1) e clica em **Processar
+   vídeos**: melhores tomadas, sem respiros nem erros, cor corrigida. →
    *você aprova*
-2. **Estilo** (no preview): tipo de edição (limpa ou tela dividida), headline,
-   legenda, cor de destaque, zooms, flash e trilha com IA.
-3. **Visual.** Legendas animadas, gráficos, tela dividida e trilha, tudo no
-   `final.mp4`.
-4. **Postagem.** Legenda por rede, hashtags e palavras-chave, prontas para copiar.
+2. **Visual.** No card de Estilo: tipo de edição (limpa ou tela dividida),
+   headline, legenda, cor de destaque, flash na transição (tipo, força e onde),
+   zooms e trilha com IA. Sai o `final.mp4`, e o botão **Salvar vídeo** grava
+   onde você escolher.
+3. **Postagem.** Legenda por rede, hashtags e palavras-chave, prontas para copiar.
 
 ---
 
@@ -121,11 +125,11 @@ fica mixada por baixo da voz e **pode ser usada comercialmente** (MIT).
 - O motor fica fora da skill, em `~/.cache/fm-cut/ACE-Step-1.5` (mude com
   `FMCUT_MUSIC_DIR`), num ambiente próprio.
 - Espaço: ~10 GB de modelos, baixados uma vez.
-- Se preferir uma música sua, mande o mp3 e o FM Cut mixa do mesmo jeito.
+- Se preferir uma música sua, mande o mp3 e o Editor de Vídeos com IA mixa do mesmo jeito.
 
 ## Sobre a transcrição
 
-O FM Cut usa o [WhisperX](https://github.com/m-bain/whisperX): transcreve com o
+O Editor de Vídeos com IA usa o [WhisperX](https://github.com/m-bain/whisperX): transcreve com o
 Whisper e faz **alinhamento forçado** de cada palavra contra o áudio. É isso que
 deixa a legenda animada sincronizada. Os modelos baixam na primeira transcrição
 (alguns GB) e ficam em cache.

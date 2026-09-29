@@ -1,4 +1,4 @@
-# SHORT-FORM track (Reels / TikTok / Shorts) — Phase 2 + 3 reference
+# SHORT-FORM track (Reels / TikTok / Shorts) — Phase 2 reference
 
 Read this file when the video is vertical short-form and the Phase-1 cut is
 approved. Everything here rides on the **data-driven template** at
@@ -159,12 +159,12 @@ An unchecked box is an explicit NO, not a silence. Copy the picks into
 3. **Write `public/edit-data.json`** — the whole edit in one file (schema in
    `assets/shortform/README.md`): durationSec (exact ffprobe of cut.mp4),
    camera zooms, hook lines/logo/sign, captions config, inserts[], behind[],
-   soundtrack (leave `enabled:false` until Phase 3).
+   soundtrack (leave `enabled:false`; the delivery mux adds the music).
 4. **Verify with stills, batched:** `npx remotion still Reels --frame=<n> f.png`
    for the hook still (user approval), then ONE contact sheet for spot checks:
    `contact_sheet.py <render> --times t1 t2 t3 -o sheet.png` — one image, not N.
 5. **Render:** `npx remotion render Reels out/render.mp4`, then loudnorm →
-   `edit/final.mp4` (see Phase 3).
+   `edit/final.mp4` (see Soundtrack).
 
 Never edit `src/Main.tsx`. Bespoke graphics go in `src/CustomGraphics.tsx`
 (the ONE editable file — read it only when the video needs a custom graphic).
@@ -496,7 +496,7 @@ The library lives in `<skill>/library/logos/`. It belongs to the user: git
 ignores it and the installer preserves it across updates. The **Marcas** shelf
 in the preview shows it on a light checker, so the mark is seen as stored.
 
-## Phase 3 — soundtrack (short-form)
+## Soundtrack (part of the Fase-2 delivery)
 
 The soundtrack is generated **locally and for free** with **ACE-Step 1.5**
 (<https://github.com/ace-step/ACE-Step-1.5>). It is MIT-licensed, code and
@@ -688,7 +688,7 @@ entries exist here.
 
 ---
 
-## Anti-patterns (Fase 2/3)
+## Anti-patterns (Fase 2)
 
 These moved out of SKILL.md: they only bite after the phase gate, and the
 skill prompt is resent every turn.
@@ -724,7 +724,7 @@ skill prompt is resent every turn.
 
 ---
 
-## Helpers de Fase 2/3
+## Helpers de Fase 2
 
 - **`captions_for_remotion.py`** (karaoke JSON) · **`face_track.py`** (eye-track JSON) · **`person_matte.py`** (RVM alpha matte; `uv sync --extra matting`) · **`pexels_search.py`** · **`wikimedia_images.py`** (no key, brands/people first choice) · **`google_images.py`** (fallback, mind rights) · **`captions_srt.py`** (longform .srt) · **`chapters.py`** (YouTube chapters) · **`music_local.py`** (free local AI soundtrack with ACE-Step 1.5: `--check`, `--setup`, or `"<vibe>" -o trilha.mp3 --duration N`. Pass a MUSICAL vibe (genre + instruments + tempo + mood); it is auto-framed as an instrumental under a voice).
 

@@ -77,7 +77,7 @@ Then copy `cut.mp4` into `public/` and generate the data files below.
     {"src": "brand/logo.jpg", "start": 11.64, "end": 14.73, "fit": "cover", "bandH": 750}
   ],
   "soundtrack": {"enabled": false, "file": "trilha.mp3", "volume": 0.0445}
-  // Phase 3 flips soundtrack.enabled to true once trilha.mp3 exists
+  // flip soundtrack.enabled to true once trilha.mp3 exists (preview renders)
 }
 ```
 
