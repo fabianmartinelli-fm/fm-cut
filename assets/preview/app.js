@@ -886,6 +886,7 @@ async function applyState(data) {
   renderSetup();
   renderPost();
   refreshHeader();
+  requestAnimationFrame(fitPlayer);
 }
 
 // Fase 1 plays the clean cut; Fase 2 plays the Phase-2 render (state.finalVideo)
@@ -1911,6 +1912,9 @@ document.querySelectorAll('.tab').forEach((tab) =>
     renderAll();
     renderSetup();
     renderPost();
+    // the tab changes the timeline's height (more tracks on Fase 2), so the
+    // top row — and the player sized from it — changes too
+    requestAnimationFrame(fitPlayer);
   })
 );
 

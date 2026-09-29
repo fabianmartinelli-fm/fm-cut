@@ -1620,3 +1620,17 @@ button.tl-chip:disabled { cursor: default; }
 }
 #flashOptsGroup { max-width: none; overflow: visible; }
 #flashOptsGroup .flash-opts { flex-direction: row; flex-wrap: wrap; gap: 8px 22px; align-items: flex-start; }
+/* flash options: their own vertical column between the caption styles and the
+   edit elements (the element that owns them sits right next to it) */
+.ws-top > .setup .setup-inner {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.25fr) 190px 250px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "head head head fx   side"
+    "edit hl   cap  fx   side"
+    "acc  hl   cap  fx   side";
+}
+.ws-top > .setup #flashOptsGroup { grid-area: fx; min-height: 0; overflow-y: auto; }
+#flashOptsGroup .flash-opts { flex-direction: column; flex-wrap: nowrap; gap: 10px; }
+#flashOptsGroup .flash-chips { flex-direction: column; align-items: stretch; }
+#flashOptsGroup .flash-chip { justify-content: flex-start; }
