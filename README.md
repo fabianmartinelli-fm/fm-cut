@@ -37,6 +37,7 @@ horizontal** (YouTube), com **Claude Code**, **Codex** e **Gemini/Antigravity**.
 | **Trilha com IA local e gratuita** | Troca o Treblo (pago, com conta) pelo [ACE-Step 1.5](https://github.com/ace-step/ACE-Step-1.5), licença MIT, que roda no Mac (Apple Silicon), NVIDIA, AMD e Intel. A trilha entra no vídeo final da Fase 2, sem uma etapa separada depois. |
 | **Fase 3: legenda da postagem** | Toda edição termina com a legenda de Instagram, TikTok, YouTube Shorts (com título) e LinkedIn, mais hashtags e palavras-chave de busca, na aba **Postagem** do preview. Lá dá para editar, tirar e pôr hashtags e copiar com um clique. |
 | **Identidade visual FM Solutions** | Preview com a paleta navy/azul/roxo e tipografia Inter. |
+| **Biblioteca de marcas** | ~46 logos e ~13 mascotes/símbolos de tecnologia e IA, baixados do Wikimedia na instalação (PNG transparente + SVG). Você sobe a logo da **sua empresa** em Mídia → Marcas, e o editor passa a usá-la sempre, sem alterar a marca. |
 | **Legenda empilhada na tela dividida** | Nos trechos de tela dividida, a legenda sobe para a emenda da tela em vez de ficar em cima do rosto. |
 
 ---

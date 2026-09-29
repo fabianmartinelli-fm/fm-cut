@@ -492,6 +492,13 @@ For every brand the video names (hook card logo, split-screen art, inserts):
    Archive only a logo you are confident is official. A guess stays out of the
    library.
 
+**Mascots and symbols** (`kind: "mascote"`, e.g. the Claude spark, the
+DeepSeek whale, Tux, the Android robot): `brand_library.py find "<brand>"
+--kind mascote`. They obey the same rule: shown as published, never redrawn,
+recolored or "animated into a character". They suit playful beats (a mascot
+popping in when the brand is named, a symbol as the anchor of a split-screen
+card); the wordmark suits a serious claim. Pick by the tone of the sentence.
+
 The library lives in `<skill>/library/logos/`. It belongs to the user: git
 ignores it and the installer preserves it across updates. The **Marcas** shelf
 in the preview shows it on a light checker, so the mark is seen as stored.

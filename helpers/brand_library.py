@@ -8,6 +8,7 @@ Lives in <skill>/library/logos/ (override: $FMCUT_LIBRARY_DIR). The installer
 keeps library/ across updates and git ignores it — it is the user's data.
 
     uv run python helpers/brand_library.py find "NVIDIA"        # exit 0 + JSON if found
+    uv run python helpers/brand_library.py find "Claude" --kind mascote   # mascot/symbol
     uv run python helpers/brand_library.py list
     uv run python helpers/brand_library.py add logo.svg --name "NVIDIA" \
         --aliases "nvidia corp,nvda" --source https://… --license "trademark, press kit"
@@ -63,13 +64,28 @@ def save(idx: dict) -> None:
     tmp.replace(INDEX)
 
 
-def find(name: str) -> dict | None:
+def _keys(slug: str, e: dict) -> set[str]:
+    return {norm(e.get("name", "")), norm(slug), *(norm(a) for a in e.get("aliases", []))}
+
+
+def find(name: str, kind: str = "logo") -> dict | None:
     """Exact normalized match on name, slug or alias. Deliberately NOT fuzzy:
-    putting the wrong company's mark on screen is worse than searching again."""
+    putting the wrong company's mark on screen is worse than searching again.
+
+    kind="logo" (default) returns the brand's main logo. kind="mascote" returns
+    its mascot/symbol (Claude spark, DeepSeek whale, Tux…): a mascot also answers
+    to its brand's names through its "brand" field, so find("Claude", "mascote")
+    works."""
     q = norm(name)
-    for slug, e in load().items():
-        keys = {norm(e.get("name", "")), norm(slug), *(norm(a) for a in e.get("aliases", []))}
-        if q in keys and (LOGOS / e["file"]).exists():
+    idx = load()
+    for slug, e in idx.items():
+        if e.get("kind", "logo") != kind or not (LOGOS / e["file"]).exists():
+            continue
+        keys = _keys(slug, e)
+        base = idx.get(e.get("brand", "")) if kind != "logo" else None
+        if base:
+            keys |= _keys(e["brand"], base)
+        if q in keys:
             return {"slug": slug, **e, "path": str(LOGOS / e["file"])}
     return None
 
@@ -166,6 +182,8 @@ def seed(only: set[str] | None = None, force: bool = False) -> tuple[list[str], 
             meta = ii.get("extmetadata") or {}
             idx[slug] = {
                 "name": b["name"],
+                "kind": b.get("kind", "logo"),
+                **({"brand": b["brand"]} if b.get("brand") else {}),
                 "aliases": sorted(set(b.get("aliases", []))),
                 "file": png.name,
                 "svg": svg_name,
@@ -189,6 +207,7 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     f = sub.add_parser("find")
     f.add_argument("name")
+    f.add_argument("--kind", default="logo", choices=["logo", "mascote"])
     sub.add_parser("list")
     a = sub.add_parser("add")
     a.add_argument("file", type=Path)
@@ -210,13 +229,14 @@ def main() -> None:
         return
 
     if args.cmd == "find":
-        hit = find(args.name)
+        hit = find(args.name, args.kind)
         print(json.dumps(hit, ensure_ascii=False) if hit else f"não está na biblioteca: {args.name}")
         sys.exit(0 if hit else 1)
     if args.cmd == "list":
         for slug, e in sorted(load().items()):
             al = f"  ({', '.join(e['aliases'])})" if e.get("aliases") else ""
-            print(f"{slug:24} {e['name']}{al} — {e['file']} · {e.get('source', '')}")
+            k = "" if e.get("kind", "logo") == "logo" else "  [mascote]"
+            print(f"{slug:24} {e['name']}{al}{k} — {e['file']} · {e.get('source', '')}")
         return
     if args.cmd == "add":
         e = add(args.file, args.name, args.aliases.split(","), args.source, args.license)

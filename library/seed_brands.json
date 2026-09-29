@@ -1,5 +1,5 @@
 {
-  "_readme": "Marcas de tecnologia e IA pré-carregadas por `brand_library.py seed`. Só o Wikimedia Commons, só arquivos que representam a marca oficial. O repositório guarda esta LISTA; os arquivos das logos são baixados na máquina de quem instala (git ignora library/logos/). Para incluir uma marca: slug, nome, apelidos e o título exato do arquivo no Commons.",
+  "_readme": "Marcas de tecnologia e IA pré-carregadas por `brand_library.py seed`. Só o Wikimedia Commons, só arquivos que representam a marca oficial. O repositório guarda esta LISTA; os arquivos das logos são baixados na máquina de quem instala (git ignora library/logos/). Para incluir uma marca: slug, nome, apelidos e o título exato do arquivo no Commons. Entradas com \"kind\": \"mascote\" são mascotes e símbolos das marcas (o Claude spark, a baleia do DeepSeek, o Tux…); \"brand\" aponta para o logo principal.",
   "brands": [
     {
       "slug": "openai",
@@ -337,6 +337,149 @@
       "name": "Airtable",
       "aliases": [],
       "commons": "Airtable Logo.svg"
+    },
+    {
+      "slug": "claude-simbolo",
+      "name": "Claude (símbolo)",
+      "kind": "mascote",
+      "brand": "claude",
+      "aliases": [
+        "claude spark",
+        "asterisco do claude",
+        "mascote do claude"
+      ],
+      "commons": "Claude AI symbol.svg"
+    },
+    {
+      "slug": "deepseek-baleia",
+      "name": "DeepSeek (baleia)",
+      "kind": "mascote",
+      "brand": "deepseek",
+      "aliases": [
+        "baleia do deepseek",
+        "mascote do deepseek"
+      ],
+      "commons": "DeepSeek-icon.svg"
+    },
+    {
+      "slug": "gemini-simbolo",
+      "name": "Gemini (símbolo)",
+      "kind": "mascote",
+      "brand": "gemini",
+      "aliases": [
+        "estrela do gemini",
+        "ícone do gemini"
+      ],
+      "commons": "Google Gemini icon 2025.svg"
+    },
+    {
+      "slug": "copilot-simbolo",
+      "name": "Copilot (símbolo)",
+      "kind": "mascote",
+      "brand": "copilot",
+      "aliases": [
+        "ícone do copilot"
+      ],
+      "commons": "Microsoft 365 Copilot Icon one-color.svg"
+    },
+    {
+      "slug": "grok-simbolo",
+      "name": "Grok (símbolo)",
+      "kind": "mascote",
+      "brand": "grok",
+      "aliases": [
+        "xai",
+        "ícone do grok"
+      ],
+      "commons": "Grok-icon.svg"
+    },
+    {
+      "slug": "meta-simbolo",
+      "name": "Meta (símbolo)",
+      "kind": "mascote",
+      "brand": "meta",
+      "aliases": [
+        "infinito da meta",
+        "ícone da meta"
+      ],
+      "commons": "Meta Platforms Inc. logo (cropped).svg"
+    },
+    {
+      "slug": "ollama-lhama",
+      "name": "Ollama (lhama)",
+      "kind": "mascote",
+      "brand": "ollama",
+      "aliases": [
+        "ollama",
+        "lhama do ollama"
+      ],
+      "commons": "Ollama-logo.svg"
+    },
+    {
+      "slug": "android-robo",
+      "name": "Android (robô)",
+      "kind": "mascote",
+      "brand": "android",
+      "aliases": [
+        "android",
+        "robô do android",
+        "bugdroid"
+      ],
+      "commons": "Android robot.svg"
+    },
+    {
+      "slug": "linux-tux",
+      "name": "Linux (Tux)",
+      "kind": "mascote",
+      "brand": "linux",
+      "aliases": [
+        "linux",
+        "tux",
+        "pinguim do linux"
+      ],
+      "commons": "Tux.svg"
+    },
+    {
+      "slug": "mastodon-mascote",
+      "name": "Mastodon (mascote)",
+      "kind": "mascote",
+      "brand": "mastodon",
+      "aliases": [
+        "mastodon"
+      ],
+      "commons": "Mastodon mascot vector version.svg"
+    },
+    {
+      "slug": "slack-simbolo",
+      "name": "Slack (símbolo)",
+      "kind": "mascote",
+      "brand": "slack",
+      "aliases": [
+        "ícone do slack"
+      ],
+      "commons": "Slack icon 2019.svg"
+    },
+    {
+      "slug": "firefox-simbolo",
+      "name": "Firefox",
+      "kind": "mascote",
+      "brand": "firefox",
+      "aliases": [
+        "firefox",
+        "mozilla firefox"
+      ],
+      "commons": "Firefox logo, 2019.svg"
+    },
+    {
+      "slug": "python-simbolo",
+      "name": "Python",
+      "kind": "mascote",
+      "brand": "python",
+      "aliases": [
+        "python",
+        "linguagem python"
+      ],
+      "commons": "Python-logo-notext.svg"
     }
   ]
 }

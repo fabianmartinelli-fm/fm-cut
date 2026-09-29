@@ -2493,10 +2493,14 @@ function renderMedia() {
   let html = '';
   if (lib) {
     const items = S.media.library || [];
+    const card = (l) => mediaCard(l.url, l.name,
+      (l.aliases || []).join(', ') || (l.source === 'upload' ? 'enviada por você' : 'oficial'),
+      { logo: true, slug: l.slug });
+    const logos = items.filter((l) => (l.kind || 'logo') === 'logo');
+    const mascots = items.filter((l) => l.kind === 'mascote');
     html = items.length
-      ? `<div class="media-grid">${items.map((l) => mediaCard(l.url, l.name,
-          (l.aliases || []).join(', ') || (l.source === 'upload' ? 'enviada por você' : 'oficial'),
-          { logo: true, slug: l.slug })).join('')}</div>`
+      ? `<div><div class="media-group-title">Logos · ${logos.length}</div><div class="media-grid">${logos.map(card).join('')}</div></div>`
+        + (mascots.length ? `<div><div class="media-group-title">Mascotes e símbolos · ${mascots.length}</div><div class="media-grid">${mascots.map(card).join('')}</div></div>` : '')
       : `<p class="media-empty">Nenhuma marca salva ainda. Envie a logo oficial das empresas que você cita nos vídeos e ela passa a ser usada exatamente assim em todas as edições. Sem ela, o Claude procura a logo oficial sozinho.</p>`;
   } else {
     const src = S.media.sources || [];

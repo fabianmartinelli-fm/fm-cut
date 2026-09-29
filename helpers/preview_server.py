@@ -411,7 +411,7 @@ class Handler(BaseHTTPRequestHandler):
                    for p in sorted(md.iterdir())
                    if p.is_file() and not p.name.startswith(".")] if md.is_dir() else []
         library = [{"slug": s, "name": e["name"], "aliases": e.get("aliases", []),
-                    "source": e.get("source", ""),
+                    "source": e.get("source", ""), "kind": e.get("kind", "logo"),
                     "url": f"/library/logos/{quote(e['file'])}"}
                    for s, e in sorted(brand_library.load().items())
                    if (brand_library.LOGOS / e["file"]).exists()]
