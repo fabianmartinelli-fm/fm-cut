@@ -168,13 +168,19 @@ named. Delete `preview_media.json` once you have taken the items into account.
 Logo rules (library first, never altered, archive official finds) are in the
 track reference under "Brand logos".
 
-### The Estilo tab (between Fase 1 and Fase 2)
+### The Estilo card (top of Fase 2)
+
+The layout is CapCut-style on both phases. The top row holds the left card and
+the player, and the timeline runs full width underneath. On **Fase 1** the left
+card is **Mídia**. On **Fase 2** it is **Estilo**, the style picker. The word
+"Estilo tab" below and in the track references means this card.
 
 The cut is approved and nothing about the LOOK of Fase 2 is decided. **Do not ask
-the style questions in chat** — the gate screen exists so the user SEES what each
+the style questions in chat.** The gate screen exists so the user SEES what each
 style does, and a chat list of names asks them to choose blind. Set
-`"awaitingStyle": true` in `state.json`; the UI opens its own tab and
-`watch_edits.py` notifies you when they save `<edit>/preview_style.json`.
+`"awaitingStyle": true` in `state.json`. The UI unlocks Fase 2, lands on it with
+the Estilo card open, and `watch_edits.py` notifies you when they save
+`<edit>/preview_style.json`.
 
 The catalog of options and what each pick means is in the track reference, which
 you read next anyway — **`references/shortform.md`**. Short-form only: the gate

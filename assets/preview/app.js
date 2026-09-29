@@ -813,8 +813,8 @@ async function applyState(data) {
   S.style = { ...defaultStyle(), ...(S.state.style || {}) };
   S.style.elements = { ...defaultStyle().elements, ...((S.state.style || {}).elements || {}) };
   $('setupNote').value = S.style.note || '';
-  // the skill opened the gate → land the user on the Estilo tab
-  if (S.state.awaitingStyle) S.tab = 'style';
+  // the skill opened the gate → land the user on Fase 2, where the style card is
+  if (S.state.awaitingStyle) S.tab = 2;
 
   const hasVideo = S.videoDuration > 0;
   $('playerWrap').classList.toggle('hidden', !hasVideo);
@@ -828,12 +828,10 @@ async function applyState(data) {
 
   // phase 2 data
   const tab2 = document.querySelector('[data-tab="2"]');
-  tab2.disabled = (S.state.phase || 1) < 2;
-  // Estilo opens when the catalog applies to this job: the skill asked for a
-  // pick, or one is already recorded. Before that there is nothing to choose.
-  const tabS = document.querySelector('[data-tab="style"]');
-  tabS.disabled = !S.state.awaitingStyle && !S.state.style;
-  if (tabS.disabled && S.tab === 'style') S.tab = 1;
+  // Fase 2 opens at the style gate (its top-left card is the style picker) or
+  // once a Phase-2 render exists. Before that there is nothing to choose.
+  tab2.disabled = (S.state.phase || 1) < 2 && !styleApplies();
+  if (tab2.disabled && S.tab === 2) S.tab = 1;
   const tabP = document.querySelector('[data-tab="post"]');
   tabP.disabled = !S.state.post;
   if (tabP.disabled && S.tab === 'post') S.tab = 1;
@@ -1201,12 +1199,17 @@ function updateSummary() {
 // decision the user gets exactly one shot at.
 let wasShowing = false; // gate was up on the previous render (for the re-fit)
 
+// The style catalog applies once the skill asked for a pick or one is recorded.
+function styleApplies() { return !!(S.state && (S.state.awaitingStyle || S.state.style)); }
+
 function renderSetup() {
-  const show = S.tab === 'style';
+  // top-left card: Estilo on Fase 2 (when the catalog applies), Mídia otherwise
+  const show = S.tab === 2 && styleApplies();
   $('styleSetup').classList.toggle('hidden', !show);
+  $('mediaPanel').classList.toggle('hidden', show);
   const hasVideo = S.videoDuration > 0;
-  $('stage').classList.toggle('hidden', show || !hasVideo);
-  $('emptyState').classList.toggle('hidden', hasVideo || show);
+  $('stage').classList.toggle('hidden', S.tab === 'post');
+  $('emptyState').classList.toggle('hidden', hasVideo);
 
   if (!show) {
     capAnims = []; // stop stepping demos that are not on screen
@@ -1585,13 +1588,15 @@ function drawWave() {
   }
 }
 
-// Vertical sources get the split layout (player right, editor left) — stacked,
-// a 9:16 clip is tiny above a full-width timeline. Driven off the decoded frame
-// size, so it works for cut.mp4 and the Phase-2 render alike.
+// The player card sizes itself from the decoded frame: height fills the top
+// row and the width follows the clip's aspect (a <video> with height:100% and
+// width:auto otherwise falls back to a 2:1 box and letterboxes a 9:16 clip).
+// Driven off the decoded frame, so it works for cut.mp4 and the render alike.
 function applyOrientation() {
   const w = video.videoWidth;
   const h = video.videoHeight;
   if (!w || !h) return;
+  video.style.aspectRatio = `${w} / ${h}`;
   const portrait = h > w;
   if (portrait === document.body.classList.contains('portrait')) return;
   document.body.classList.toggle('portrait', portrait);
@@ -2220,17 +2225,6 @@ const mediaPanel = $('mediaPanel');
   mediaPanel.classList.remove('dragging');
   if (ev === 'drop') importFiles(e.dataTransfer.files);
 }));
-
-// collapse / expand, remembered per viewer
-function setMediaCollapsed(c) {
-  document.body.classList.toggle('media-collapsed', c);
-  $('mediaExpand').classList.toggle('hidden', !c);
-  try { localStorage.setItem('fmcut.mediaCollapsed', c ? '1' : '0'); } catch (e) { /* private mode */ }
-  requestAnimationFrame(() => { fitZoom(); renderAll(); });
-}
-$('mediaCollapse').addEventListener('click', () => setMediaCollapsed(true));
-$('mediaExpand').addEventListener('click', () => setMediaCollapsed(false));
-try { if (localStorage.getItem('fmcut.mediaCollapsed') === '1') setMediaCollapsed(true); } catch (e) { /* ignore */ }
 
 loadMedia();
 setInterval(loadMedia, 6000); // the agent archives logos it finds, too

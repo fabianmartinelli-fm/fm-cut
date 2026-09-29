@@ -162,15 +162,13 @@ header {
 .tab:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ---------- main ---------- */
-main { flex: 1 1 auto; display: flex; flex-direction: row; gap: 10px; padding: 10px 14px 8px; min-height: 0; }
-.main-col { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 14px 8px; min-height: 0; }
 .empty p { max-width: 460px; margin: 0 auto; line-height: 1.6; }
 
 /* ---------- Mídia panel (CapCut-style bin) ----------
-   Left of everything, so importing footage and logos is the first thing on the
-   screen — not a chat instruction. Collapses to a slim tab. */
+   Top-left card on Fase 1, so importing footage and logos is the first thing
+   on the screen — not a chat instruction. */
 .media-panel {
-  flex: 0 0 264px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -196,7 +194,8 @@ main { flex: 1 1 auto; display: flex; flex-direction: row; gap: 10px; padding: 1
 .media-tab.active { color: var(--text); background: rgba(139, 92, 246, 0.22); }
 .media-drop {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: center;
   align-items: center;
   gap: 6px;
   padding: 12px;
@@ -216,7 +215,7 @@ main { flex: 1 1 auto; display: flex; flex-direction: row; gap: 10px; padding: 1
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 .media-group-title { font-size: 10.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
-.media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
 .media-card {
   position: relative;
   border-radius: 10px;
@@ -262,22 +261,7 @@ main { flex: 1 1 auto; display: flex; flex-direction: row; gap: 10px; padding: 1
 .logo-form img { max-height: 70px; object-fit: contain; align-self: center; }
 .logo-form .post-input { font-size: 12.5px; padding: 8px 10px; }
 .logo-form-actions { display: flex; justify-content: flex-end; gap: 6px; }
-.media-expand {
-  writing-mode: vertical-rl;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  color: var(--dim);
-  background: var(--glass);
-  border: 1px solid var(--stroke);
-  border-radius: 12px;
-  padding: 12px 6px;
-  cursor: pointer;
-}
-.media-expand:hover { color: var(--text); }
-body.media-collapsed .media-panel { display: none; }
-@media (max-width: 1100px) { .media-panel { flex-basis: 220px; } }
+
 
 .empty { flex: 1; display: flex; align-items: center; justify-content: center; }
 .empty-inner { text-align: center; padding: 40px; }
@@ -286,40 +270,53 @@ body.media-collapsed .media-panel { display: none; }
 .empty p { color: var(--dim); font-size: 13px; }
 .empty code { color: var(--teal); }
 
-/* ---------- player ---------- */
-.player-wrap { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
-
-/* transport + timeline travel together, so the pair can sit under the player
-   (landscape) or beside it (portrait) without touching the DOM again */
-/* the stage holds player + editor; main keeps the footer out of the split */
+/* ---------- workspace (CapCut layout) ----------
+   Top row: the left card (Mídia on Fase 1, Estilo on Fase 2) beside the player.
+   Bottom: transport + timeline across the FULL width — the timeline is the
+   thing that needs horizontal room, the player needs height. One layout for
+   portrait and landscape footage: the player's width follows the clip's own
+   aspect, the left card takes whatever is left. */
 .stage { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
-.editor-col { flex: 1 1 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
-.editor-col .transport { align-self: center; }
+.ws-top { flex: 1 1 0; display: flex; gap: 10px; min-height: 0; min-width: 0; }
+.ws-top > .media-panel,
+.ws-top > .setup { flex: 1 1 auto; min-width: 0; }
+.ws-card { border-radius: var(--radius); }
+.ws-top > .setup { padding: 14px 16px; }
+.editor-col {
+  flex: 0 0 auto;
+  /* the player needs the height more than the timeline does; extra tracks
+     (Fase 2) scroll inside the panel */
+  height: clamp(210px, 31vh, 350px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+.editor-col .transport { align-self: stretch; width: auto; }
 
-/* ---------- portrait layout: tall player right, editor left ----------
-   A 9:16 clip is postage-stamp sized when stacked above a full-width timeline.
-   Side by side, the player takes the full column height instead. */
-body.portrait .stage { flex-direction: row; align-items: stretch; gap: 12px; }
-body.portrait .player-wrap { order: 2; height: 100%; justify-content: flex-start; }
-body.portrait .player-frame { height: 100%; max-height: none; align-items: center; }
-body.portrait .player-frame video { height: 100%; width: auto; max-height: none; max-width: 38vw; }
-body.portrait .editor-col { order: 1; }
-body.portrait .editor-col .transport { align-self: stretch; width: auto; }
-
+/* ---------- player ---------- */
+.player-wrap { flex: 0 1 auto; display: flex; min-height: 0; min-width: 0; max-width: 62%; }
 .player-frame {
   padding: 8px;
   border-radius: 18px;
-  max-height: 42vh;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 .player-frame video {
-  max-height: calc(42vh - 16px);
-  max-width: 70vw;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
   border-radius: 12px;
   display: block;
   background: #000;
 }
+.ws-top > .empty { flex: 0 0 34%; }
 
 .transport {
   display: flex;
