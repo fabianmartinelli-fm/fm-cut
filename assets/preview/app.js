@@ -1207,6 +1207,7 @@ function renderSetup() {
   const show = S.tab === 2 && styleApplies();
   $('styleSetup').classList.toggle('hidden', !show);
   $('mediaPanel').classList.toggle('hidden', show);
+  $('formatCard').classList.toggle('hidden', show);
   const hasVideo = S.videoDuration > 0;
   $('stage').classList.toggle('hidden', S.tab === 'post');
   $('emptyState').classList.toggle('hidden', hasVideo);
@@ -1596,7 +1597,7 @@ function applyOrientation() {
   const w = video.videoWidth;
   const h = video.videoHeight;
   if (!w || !h) return;
-  video.style.aspectRatio = `${w} / ${h}`;
+  applyView();
   const portrait = h > w;
   if (portrait === document.body.classList.contains('portrait')) return;
   document.body.classList.toggle('portrait', portrait);
@@ -1833,7 +1834,7 @@ $('btnFit').addEventListener('click', () => { fitZoom(); renderAll(); });
 panel.addEventListener('scroll', () => requestAnimationFrame(() => { drawRuler(); drawWave(); positionNeedle(); }));
 // renderSetup too: the caption demos bake their scale from the box width, so a
 // resize (or the short-pane media query kicking in) has to rebuild them
-window.addEventListener('resize', () => { fitZoom(); renderAll(); renderSetup(); renderPost(); });
+window.addEventListener('resize', () => { fitZoom(); renderAll(); renderSetup(); renderPost(); fitPlayer(); });
 
 // tabs
 document.querySelectorAll('.tab').forEach((tab) =>
@@ -2105,6 +2106,7 @@ async function loadMedia() {
     S.mediaSig = txt;
     S.media = JSON.parse(txt);
     renderMedia();
+    renderFormat();
   } catch (e) { /* server restarting */ }
 }
 
@@ -2113,7 +2115,9 @@ function mediaCard(url, name, sub, opts = {}) {
     ? `<video class="media-thumb" src="${url}#t=1" muted preload="metadata"></video>`
     : `<img class="media-thumb" src="${url}" alt="" loading="lazy">`;
   const del = opts.slug ? `<button class="media-del" data-slug="${escHtml(opts.slug)}" title="Remover da biblioteca">✕</button>` : '';
-  return `<div class="media-card${opts.logo ? ' logo' : ''}" title="${escHtml(name)}">${thumb}${del}
+  const ord = opts.order ? `<span class="media-order">${opts.order}</span>` : '';
+  const drag = opts.dragName ? ` draggable="true" data-src="${escHtml(opts.dragName)}"` : '';
+  return `<div class="media-card${opts.logo ? ' logo' : ''}"${drag} title="${escHtml(opts.dragName ? `${name} — arraste para mudar a ordem` : name)}">${thumb}${ord}${del}
     <div class="media-name">${escHtml(name)}</div>${sub ? `<div class="media-sub">${escHtml(sub)}</div>` : ''}</div>`;
 }
 
@@ -2134,8 +2138,9 @@ function renderMedia() {
   } else {
     const src = S.media.sources || [];
     const prj = S.media.project || [];
-    html += `<div><div class="media-group-title">Vídeos brutos</div>${src.length
-      ? `<div class="media-grid">${src.map((v) => mediaCard(v.url, v.name, mb(v.size), { video: true })).join('')}</div>`
+    html += `<div><div class="media-group-title">Vídeos brutos${src.length > 1 ? ' · arraste para ordenar' : ''}</div>${src.length
+      ? `<div class="media-grid">${src.map((v, i) => mediaCard(v.url, v.name, mb(v.size),
+          { video: true, order: src.length > 1 ? i + 1 : 0, dragName: src.length > 1 ? v.name : '' })).join('')}</div>`
       : '<p class="media-empty">Importe o vídeo gravado para começar.</p>'}</div>`;
     html += `<div><div class="media-group-title">Imagens deste vídeo</div>${prj.length
       ? `<div class="media-grid">${prj.map((m) => mediaCard(m.url, m.name, mb(m.size), { video: m.kind === 'video' })).join('')}</div>`
@@ -2215,16 +2220,143 @@ $('mediaList').addEventListener('click', async (e) => {
 
 // drag and drop onto the whole panel
 const mediaPanel = $('mediaPanel');
+const isFileDrag = (e) => [...(e.dataTransfer ? e.dataTransfer.types : [])].includes('Files');
 ['dragenter', 'dragover'].forEach((ev) => mediaPanel.addEventListener(ev, (e) => {
+  if (!isFileDrag(e)) return; // a card being reordered, not an import
   e.preventDefault();
   mediaPanel.classList.add('dragging');
 }));
 ['dragleave', 'drop'].forEach((ev) => mediaPanel.addEventListener(ev, (e) => {
+  if (!isFileDrag(e)) return;
   e.preventDefault();
   if (ev === 'dragleave' && mediaPanel.contains(e.relatedTarget)) return;
   mediaPanel.classList.remove('dragging');
   if (ev === 'drop') importFiles(e.dataTransfer.files);
 }));
+
+// reorder raw videos: the gallery order is the story order the cut follows
+let dragName = null;
+$('mediaList').addEventListener('dragstart', (e) => {
+  const c = e.target.closest('.media-card[data-src]');
+  if (!c) return;
+  dragName = c.dataset.src;
+  e.dataTransfer.setData('text/x-fmcut', dragName);
+  e.dataTransfer.effectAllowed = 'move';
+  c.classList.add('drag-src');
+});
+$('mediaList').addEventListener('dragover', (e) => {
+  const c = e.target.closest('.media-card[data-src]');
+  if (!dragName || !c) return;
+  e.preventDefault();
+  document.querySelectorAll('.media-card.drag-over').forEach((x) => x.classList.remove('drag-over'));
+  if (c.dataset.src !== dragName) c.classList.add('drag-over');
+});
+$('mediaList').addEventListener('dragend', () => {
+  dragName = null;
+  document.querySelectorAll('.drag-src, .drag-over').forEach((x) => x.classList.remove('drag-src', 'drag-over'));
+});
+$('mediaList').addEventListener('drop', async (e) => {
+  const c = e.target.closest('.media-card[data-src]');
+  if (!dragName || !c) return;
+  e.preventDefault();
+  const names = (S.media.sources || []).map((v) => v.name);
+  const from = names.indexOf(dragName);
+  const to = names.indexOf(c.dataset.src);
+  if (from < 0 || to < 0 || from === to) return;
+  names.splice(to, 0, names.splice(from, 1)[0]);
+  S.media.sources.sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name));
+  S.mediaSig = null;
+  renderMedia();
+  await saveProject({ order: names });
+});
+
+async function saveProject(patch) {
+  try {
+    const r = await (await fetch('/api/project', { method: 'POST', body: JSON.stringify(patch) })).json();
+    if (r.ok) { S.media.setup = r.setup; renderFormat(); }
+  } catch (e) { toast('Não consegui salvar — o servidor do preview está rodando?', 4000); }
+}
+
+// ---------- Formato de saída + Processar vídeos ----------
+const FORMAT_OPTS = [
+  { id: '9:16', name: 'Vertical 9:16', sub: 'Reels · TikTok · Shorts', w: 9, h: 16 },
+  { id: '16:9', name: 'Horizontal 16:9', sub: 'YouTube', w: 16, h: 9 },
+  { id: '4:5', name: 'Retrato 4:5', sub: 'Feed do Instagram', w: 4, h: 5 },
+  { id: '1:1', name: 'Quadrado 1:1', sub: 'Feed', w: 1, h: 1 },
+  { id: 'source', name: 'Original', sub: 'Como foi gravado', w: 0, h: 0 },
+];
+function renderFormat() {
+  const cur = ((S.media && S.media.setup) || {}).aspect || 'source';
+  $('formatOpts').innerHTML = FORMAT_OPTS.map((f) => {
+    const k = f.w ? 20 / Math.max(f.w, f.h) : 0;
+    const shape = f.w
+      ? `<i style="width:${Math.round(f.w * k)}px;height:${Math.round(f.h * k)}px"></i>`
+      : '<i style="width:16px;height:16px;border-style:dashed"></i>';
+    return `<button class="format-opt${f.id === cur ? ' active' : ''}" data-aspect="${f.id}">
+      <span class="format-shape">${shape}</span>
+      <span><div class="format-name">${f.name}</div><div class="format-sub">${f.sub}</div></span></button>`;
+  }).join('');
+  const n = ((S.media && S.media.sources) || []).length;
+  $('btnProcess').disabled = !n;
+  $('processHint').textContent = n
+    ? `${n} vídeo${n > 1 ? 's' : ''}, na ordem da galeria`
+    : 'importe o vídeo bruto primeiro';
+}
+$('formatOpts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-aspect]');
+  if (!b) return;
+  S.media.setup = { ...(S.media.setup || {}), aspect: b.dataset.aspect };
+  renderFormat();
+  setView(b.dataset.aspect); // show the crop right away
+  saveProject({ aspect: b.dataset.aspect });
+});
+$('btnProcess').addEventListener('click', async () => {
+  const b = $('btnProcess');
+  b.disabled = true;
+  try {
+    const r = await (await fetch('/api/process', { method: 'POST', body: JSON.stringify({ note: $('processNote').value }) })).json();
+    if (r.ok) toast(`Enviado ✓ — o Claude vai processar ${r.files.length} vídeo(s) nessa ordem`, 5000);
+    else toast(r.error || 'Não consegui enviar', 5000);
+  } catch (e) { toast('Não consegui enviar — o servidor do preview está rodando?', 5000); }
+  b.disabled = false;
+});
+
+// ---------- player view (view only) ----------
+S.view = 'source';
+function setView(v) {
+  S.view = v;
+  document.querySelectorAll('#viewToggle button').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+  applyView();
+}
+function applyView() {
+  video.style.objectFit = S.view === 'source' ? 'contain' : 'cover';
+  fitPlayer();
+}
+// Size the <video> in px from the top row's box and the viewed aspect. CSS alone
+// cannot: with a definite height AND a max-width, aspect-ratio loses and a
+// 16:9 view of a vertical clip came out 660×581.
+function fitPlayer() {
+  const top = document.querySelector('.ws-top');
+  if (!top || !top.clientHeight) return;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  let a = vw && vh ? vw / vh : 9 / 16;
+  if (S.view && S.view !== 'source') {
+    const [x, y] = S.view.split(':').map(Number);
+    a = x / y;
+  }
+  const H = top.clientHeight - 18; // frame padding
+  // leave the left cards their minimum: Mídia 280 + Formato 236 + gaps
+  const side = $('formatCard').classList.contains('hidden') ? 360 : 280 + 236 + 20;
+  const W = Math.max(160, top.clientWidth - side - 28);
+  const w = Math.max(80, Math.min(W, H * a));
+  video.style.width = `${Math.round(w)}px`;
+  video.style.height = `${Math.round(w / a)}px`;
+}
+$('viewToggle').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-view]');
+  if (b) setView(b.dataset.view);
+});
 
 loadMedia();
 setInterval(loadMedia, 6000); // the agent archives logos it finds, too

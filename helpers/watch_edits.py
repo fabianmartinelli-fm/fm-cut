@@ -152,6 +152,30 @@ def media_digest(p: Path) -> str:
     return "\n".join(out)
 
 
+ASPECT_NAMES = {"9:16": "vertical 9:16 (Reels/TikTok/Shorts)", "16:9": "horizontal 16:9 (YouTube)",
+                "1:1": "quadrado 1:1", "4:5": "retrato 4:5 (feed)", "source": "mesmo formato da gravação"}
+
+
+def process_digest(p: Path) -> str:
+    """The "Processar vídeos" button: start (or redo) Fase 1 from the gallery."""
+    try:
+        d = json.loads(p.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        return f"preview_process.json ilegível ({e.__class__.__name__})"
+    aspect = d.get("aspect", "source")
+    out = [f"PROCESSAR VÍDEOS PEDIDO NO PREVIEW ({d.get('savedAt', '')}) — rode a Fase 1:",
+           f"  · formato de saída: {ASPECT_NAMES.get(aspect, aspect)}"
+           + ("" if aspect == "source" else f' → edl "aspect": "{aspect}" + crop_x/crop_y por take'),
+           f"  · pasta: {d.get('rawDir')}",
+           "  · vídeos, NESTA ordem (a ordem da galeria é a ordem da história):"]
+    out += [f"      {i}. {n}" for i, n in enumerate(d.get("files") or [], 1)]
+    if (d.get("note") or "").strip():
+        out.append(f"  · observação do usuário: {d['note'].strip()}")
+    out.append("  → transcreva (cache), pack, voice_levels, escolha o melhor take de cada frase,"
+               " corte respiros e erros, render + verify_cut; depois apague preview_process.json")
+    return "\n".join(out)
+
+
 def fmt(t: float) -> str:
     m, s = divmod(max(0.0, float(t)), 60)
     return f"{int(m)}:{s:05.2f}"
@@ -164,6 +188,7 @@ def main() -> int:
         root / "preview_style.json": style_digest,
         root / "preview_post.json": post_digest,
         root / "preview_media.json": media_digest,
+        root / "preview_process.json": process_digest,
     }
     # a file already sitting there at startup means it is pending — say so once
     last: dict[Path, float | None] = {}

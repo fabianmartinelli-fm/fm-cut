@@ -256,6 +256,35 @@ def shortform_target_fps(video: Path) -> str:
     return "30" if source_fps(video) >= 29.5 else "24"
 
 
+# -------- Output format (reframe) --------------------------------------------
+# `"aspect"` in the EDL picks the delivery frame, independent of how the footage
+# was shot: a horizontal take can become a 9:16 Reel and a vertical one a 16:9
+# YouTube cut. Each range crops to that aspect FROM THE SOURCE (never letterbox),
+# positioned by its own `crop_x` / `crop_y` (0 = left/top edge, 0.5 = centre,
+# 1 = right/bottom) — set them from where the speaker actually is. Unset, the
+# picture keeps the source orientation, exactly as before.
+ASPECT_SIZES = {
+    "9:16": (1080, 1920),
+    "16:9": (1920, 1080),
+    "1:1": (1080, 1080),
+    "4:5": (1080, 1350),
+}
+OUTPUT_ASPECT: str | None = None  # set by main() from edl["aspect"]
+
+
+def reframe_filter(aspect: str, crop_x: float = 0.5, crop_y: float = 0.5,
+                   draft: bool = False) -> str:
+    w, h = ASPECT_SIZES[aspect]
+    if draft:
+        w, h = (w * 2 // 3) // 2 * 2, (h * 2 // 3) // 2 * 2
+    a = w / h
+    cx = min(1.0, max(0.0, float(crop_x)))
+    cy = min(1.0, max(0.0, float(crop_y)))
+    return (f"crop='trunc(min(iw,ih*{a:.6f})/2)*2':'trunc(min(ih,iw/{a:.6f})/2)*2'"
+            f":'(iw-ow)*{cx:.4f}':'(ih-oh)*{cy:.4f}',"
+            f"scale={w}:{h}:flags=lanczos,setsar=1")
+
+
 # -------- Per-segment extraction (Rule 2 + Rule 3) --------------------------
 
 
@@ -270,6 +299,8 @@ def extract_segment(
     keep_resolution: bool = False,
     gain_db: float = 0.0,
     streams: str = "av",
+    crop_x: float = 0.5,
+    crop_y: float = 0.5,
 ) -> None:
     """Extract a cut range as its own MP4 with grade + 30ms audio fades baked in.
 
@@ -298,6 +329,8 @@ def extract_segment(
         scale = ""  # keep native resolution (longform)
     else:
         scale = "scale=-2:1920" if portrait else "scale=1920:-2"
+    if OUTPUT_ASPECT:
+        scale = reframe_filter(OUTPUT_ASPECT, crop_x, crop_y, draft=draft)
 
     # Rebase the picture to t=0. `-ss` lands between two source frames, so the first
     # kept frame arrives a fraction of a frame late; the CFR output (`-r`) then
@@ -488,7 +521,7 @@ def extract_all_segments(
         extract_segment(
             src_path, start, duration, seg_filter, out_path,
             preview=preview, draft=draft, keep_resolution=keep_resolution,
-            gain_db=gain_db,
+            gain_db=gain_db, crop_x=r.get("crop_x", 0.5), crop_y=r.get("crop_y", 0.5),
         )
         return out_path
 
@@ -733,7 +766,8 @@ def extract_and_assemble_jcut(
         apath = clips_dir / f"seg_{i:02d}_{r['source']}_a.wav"
         extract_segment(p["src"], p["v_in"], p["v_out"] - p["v_in"], seg_filter,
                         vpath, preview=preview, draft=draft,
-                        keep_resolution=keep_resolution, streams="v")
+                        keep_resolution=keep_resolution, streams="v",
+                        crop_x=r.get("crop_x", 0.5), crop_y=r.get("crop_y", 0.5))
         extract_segment(p["src"], p["a_in"], p["a_out"] - p["a_in"], "",
                         apath, preview=preview, draft=draft,
                         keep_resolution=keep_resolution, gain_db=gain_db,
@@ -1180,6 +1214,13 @@ def main() -> None:
     edl = json.loads(edl_path.read_text())
     edit_dir = edl_path.parent
     out_path = args.output.resolve()
+    global OUTPUT_ASPECT
+    OUTPUT_ASPECT = edl.get("aspect") or None
+    if OUTPUT_ASPECT and OUTPUT_ASPECT not in ASPECT_SIZES:
+        sys.exit(f'edl "aspect" inválido: {OUTPUT_ASPECT} (use {", ".join(ASPECT_SIZES)})')
+    if OUTPUT_ASPECT:
+        w, h = ASPECT_SIZES[OUTPUT_ASPECT]
+        print(f"  formato de saída: {OUTPUT_ASPECT} ({w}×{h}) — recorte por take (crop_x/crop_y)")
 
     # Frame-align every range BEFORE extraction, and persist it: the EDL, the
     # preview timeline and segments.json must all describe the same cut as the

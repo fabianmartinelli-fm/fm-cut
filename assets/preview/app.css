@@ -297,7 +297,8 @@ main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding
 .editor-col .transport { align-self: stretch; width: auto; }
 
 /* ---------- player ---------- */
-.player-wrap { flex: 0 1 auto; display: flex; min-height: 0; min-width: 0; max-width: 62%; }
+.player-wrap { flex: 0 0 auto; display: flex; min-height: 0; min-width: 0; }
+.ws-top > .media-panel { min-width: 280px; }
 .player-frame {
   padding: 8px;
   border-radius: 18px;
@@ -309,9 +310,9 @@ main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 .player-frame video {
-  height: 100%;
-  width: auto;
+  /* width/height set in px by fitPlayer() (clip aspect or the viewed format) */
   max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   border-radius: 12px;
   display: block;
@@ -1362,3 +1363,102 @@ button.tl-chip:disabled { cursor: default; }
 
 /* workspace: the timeline panel sizes to its tracks instead of stretching */
 .editor-col .timeline-panel { flex: 0 1 auto; min-height: 0; }
+
+/* ---------- Formato de saída (Fase 1) ----------
+   Its own narrow card between Mídia and the player: the format is a decision,
+   not a media item. The shape icon is the aspect itself, drawn to scale. */
+.format-card {
+  flex: 0 0 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.format-opts { display: flex; flex-direction: column; gap: 6px; }
+.format-opt {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--stroke);
+  border-radius: 11px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.format-opt:hover { border-color: rgba(167, 139, 250, 0.4); }
+.format-opt.active { border-color: var(--brand); background: rgba(139, 92, 246, 0.16); }
+.format-shape {
+  flex: 0 0 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.format-shape i {
+  display: block;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  color: var(--dim);
+}
+.format-opt.active .format-shape i { color: var(--brand-light); }
+.format-name { font-size: 12.5px; font-weight: 600; }
+.format-sub { font-size: 10.5px; color: var(--dim); }
+.format-card textarea { font-size: 12px; padding: 8px 10px; resize: none; }
+.format-card .btn.primary { padding: 10px 14px; }
+.format-card .media-hint { text-align: center; }
+
+/* ---------- player view toggle (view only, never changes the edit) ---------- */
+.player-frame { position: relative; }
+.view-toggle {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(6, 10, 22, 0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--stroke);
+}
+.view-toggle button {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.view-toggle button.active { color: var(--text); background: rgba(139, 92, 246, 0.35); }
+
+/* ---------- reorderable raw videos ---------- */
+.media-card[draggable="true"] { cursor: grab; }
+.media-card.drag-src { opacity: 0.4; }
+.media-card.drag-over { outline: 2px solid var(--brand-light); outline-offset: 2px; }
+.media-order {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}

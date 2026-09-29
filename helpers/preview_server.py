@@ -254,6 +254,12 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/library/delete":
             self._library_delete()
             return
+        if route == "/api/project":
+            self._project_save()
+            return
+        if route == "/api/process":
+            self._process()
+            return
         if self.path.split("?", 1)[0] != "/api/save":
             self._json({"error": "unknown route"}, 404)
             return
@@ -283,11 +289,71 @@ class Handler(BaseHTTPRequestHandler):
     # (<edit>/media/), and the brand-logo library shared by every edit.
     VIDEO_EXT = {".mp4", ".mov", ".m4v", ".mkv", ".webm"}
 
+    # <edit>/project_setup.json — the user's project choices from Fase 1:
+    # {"aspect": "9:16", "order": ["take2.mov", "take1.mov"]}. Persistent (it is
+    # the brief for the cut), unlike the preview_*.json events.
+    def _setup(self) -> dict:
+        try:
+            return json.loads((self.root / "project_setup.json").read_text())
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _write_json(self, name: str, obj: dict) -> None:
+        p = self.root / name
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2))
+        tmp.replace(p)
+
+    def _read_body(self) -> dict | None:
+        try:
+            return json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
+        except (ValueError, json.JSONDecodeError):
+            self._json({"error": "invalid JSON"}, 400)
+            return None
+
+    def _project_save(self) -> None:
+        body = self._read_body()
+        if body is None:
+            return
+        setup = self._setup()
+        if body.get("aspect") in (None, "9:16", "16:9", "1:1", "4:5", "source"):
+            if "aspect" in body:
+                setup["aspect"] = body["aspect"]
+        if isinstance(body.get("order"), list):
+            setup["order"] = [Path(str(n)).name for n in body["order"]]
+        self._write_json("project_setup.json", setup)
+        self._json({"ok": True, "setup": setup})
+
+    def _process(self) -> None:
+        """"Processar vídeos": hand the ordered footage + format to the agent."""
+        body = self._read_body()
+        if body is None:
+            return
+        setup = self._setup()
+        raw = self._raw_dir()
+        order = [n for n in setup.get("order", []) if (raw / n).is_file()]
+        rest = sorted(p.name for p in raw.iterdir()
+                      if p.is_file() and p.suffix.lower() in self.VIDEO_EXT and p.name not in order) \
+            if raw.is_dir() else []
+        files = order + rest
+        if not files:
+            self._json({"error": "importe pelo menos um vídeo bruto antes de processar"}, 400)
+            return
+        self._write_json("preview_process.json", {
+            "type": "process", "aspect": setup.get("aspect", "source"),
+            "rawDir": str(raw), "files": files, "note": str(body.get("note", "")).strip(),
+            "savedAt": time.strftime("%Y-%m-%d %H:%M:%S")})
+        self._json({"ok": True, "files": files})
+
     def _media_list(self) -> None:
         raw = self._raw_dir()
+        setup = self._setup()
+        rank = {n: i for i, n in enumerate(setup.get("order", []))}
+        vids = [p for p in raw.iterdir()
+                if p.is_file() and p.suffix.lower() in self.VIDEO_EXT] if raw.is_dir() else []
+        vids.sort(key=lambda p: (rank.get(p.name, len(rank)), p.name))
         sources = [{"name": p.name, "url": f"/raw/{quote(p.name)}", "size": p.stat().st_size}
-                   for p in sorted(raw.iterdir())
-                   if p.is_file() and p.suffix.lower() in self.VIDEO_EXT] if raw.is_dir() else []
+                   for p in vids]
         md = self.root / "media"
         project = [{"name": p.name, "url": f"/media/media/{quote(p.name)}", "size": p.stat().st_size,
                     "kind": "video" if p.suffix.lower() in self.VIDEO_EXT else "image"}
@@ -298,7 +364,8 @@ class Handler(BaseHTTPRequestHandler):
                     "url": f"/library/logos/{quote(e['file'])}"}
                    for s, e in sorted(brand_library.load().items())
                    if (brand_library.LOGOS / e["file"]).exists()]
-        self._json({"rawDir": str(raw), "sources": sources, "project": project, "library": library})
+        self._json({"rawDir": str(raw), "sources": sources, "project": project, "library": library,
+                    "setup": setup})
 
     def _upload(self) -> None:
         """Raw body upload, streamed to disk. ?scope=source|project|library

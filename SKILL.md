@@ -211,6 +211,15 @@ Then delete `preview_edits.json` and update `state.json`.
 
 Goal: best take of every beat, cut on silence, graded image, clean `cut.mp4` for approval. No text, no graphics.
 
+0. **The brief from the preview.** Read `<edit>/project_setup.json` if it exists.
+   `aspect` is the output format the user picked in the **Formato** card, and
+   `order` is the order they dragged the raw videos into. The gallery order is
+   the story order: assemble by beat, but follow it when two takes compete for
+   the same slot and nothing else decides. **"Processar vídeos"** writes
+   `preview_process.json` (format + ordered files + note), and `watch_edits.py`
+   announces it. That button IS the go for Phase 1, so run steps 1–7 without
+   re-asking what the user already set, then delete the file. An aspect other
+   than `source` goes into the EDL as `"aspect"` (see below).
 1. **Inventory.** URL source? `ingest_url.py` first (`--section` when only a range of a longform video matters). `ffprobe` every source. `transcribe_batch.py` (or `transcribe.py`) → `pack_transcripts.py` → read `takes_packed.md`. Note dimensions/orientation and whether it looks flat/LOG. Material you can't picture from the transcript → `watch_video.py` for a one-Read visual survey.
 2. **Pre-scan** `takes_packed.md` for verbal slips, mis-speaks, and dead-air-stretched words (Whisper stretches a word's end across silence — verify long "phrases" against `speech_regions.py`/waveform before trusting them). **Then run `voice_levels.py` on every source** — the transcript is level-blind, so an inaudible passage reads exactly like a normal one. Anything it flags is a decision to make BEFORE the EDL: boost it with `gain_db`, or cut the take entirely.
 3. **Converse.** Describe what you see; ask questions shaped by the material (content type, target length/aspect, pacing, must-keep/must-cut). No fixed checklist.
@@ -365,10 +374,11 @@ For a single long source (longform), the main context can pick cuts directly fro
   "sources": {"C0103": "/abs/path/C0103.MP4"},
   "grade": "eq=contrast=1.06:saturation=1.05",
   "voice_master": true,
+  "aspect": "9:16",
   "jcut": {"lead_frames": 5, "tail_trim_frames": 2},
   "ranges": [
     {"source": "C0103", "start": 2.42, "end": 6.85, "beat": "HOOK",
-     "quote": "…", "reason": "…", "gain_db": 0,
+     "quote": "…", "reason": "…", "gain_db": 0, "crop_x": 0.46, "crop_y": 0.5,
      "chapter": "Only on longform section openers"}
   ],
   "total_duration_s": 87.4
@@ -377,6 +387,20 @@ For a single long source (longform), the main context can pick cuts directly fro
 
 `grade`: preset name, raw filter, or `"auto"` — normally whatever `detect_color.py`
 returned. `chapter` fields feed `chapters.py` (longform).
+
+`aspect`: optional output format, one of `"9:16"` (1080×1920), `"16:9"`
+(1920×1080), `"4:5"` (1080×1350) or `"1:1"` (1080×1080). It comes from the
+Formato card. `render.py` crops every take to it **from the source** (never
+letterbox) and scales. Omit it to keep the footage's own orientation.
+- **Place the crop per take with `crop_x` / `crop_y`** (0 = left/top, 0.5 =
+  centre, 1 = right/bottom). Measure it on a frame of that take
+  (`contact_sheet.py`, or `face_track.py` on the source), and keep the face in
+  the upper third. A horizontal → 9:16 crop keeps only ~32% of the width, so a
+  speaker who is off-centre is lost at 0.5.
+- The player's view toggle (Original / 9:16 / 16:9) only shows a centre crop.
+  The render uses your per-take values.
+- Phase 2 must build at the same size: `edit-data.json` `width`/`height`. A
+  16:9 edit uses the longform track.
 
 `jcut`: optional. **Omit it and the J-cut runs with the defaults** (lead 5f, tail
 trim up to 2f); `false` butt-joins instead. After a render, `render.py` adds a

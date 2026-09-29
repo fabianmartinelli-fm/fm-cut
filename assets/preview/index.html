@@ -74,6 +74,17 @@
       <div id="mediaList" class="media-list"></div>
     </aside>
 
+    <!-- Formato de saída + "Processar vídeos" (Fase 1). The format is the brief
+         for the cut: render.py crops every take to it (edl "aspect"). Saved to
+         <edit>/project_setup.json; the button writes preview_process.json. -->
+    <section id="formatCard" class="format-card glass">
+      <div class="group-title">Formato de saída</div>
+      <div id="formatOpts" class="format-opts"></div>
+      <textarea id="processNote" class="post-input" rows="2" placeholder="Observações para o corte (opcional)"></textarea>
+      <button id="btnProcess" class="btn primary">Processar vídeos</button>
+      <span id="processHint" class="media-hint"></span>
+    </section>
+
     <!-- The style tab: what Fase 2 gets built as. Groups come from STYLE_CATALOG.
          No descriptions anywhere — each preview renders the thing it names. -->
     <section id="styleSetup" class="setup ws-card glass hidden">
@@ -122,6 +133,13 @@
 
     <section id="playerWrap" class="player-wrap">
       <div class="player-frame glass">
+        <!-- view-only: how the picture reads in another frame. Does not change
+             the edit — the output format lives in the Formato card. -->
+        <div id="viewToggle" class="view-toggle" title="Ver em outro formato">
+          <button data-view="source" class="active">Original</button>
+          <button data-view="9:16">9:16</button>
+          <button data-view="16:9">16:9</button>
+        </div>
         <video id="video" playsinline preload="auto"></video>
       </div>
     </section>
