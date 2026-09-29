@@ -354,6 +354,22 @@
   <div class="tool-pop-actions"><button id="capCancel" class="btn ghost small">Cancelar</button><button id="capOk" class="btn primary small">Aplicar</button></div>
 </div>
 
+<!-- quick look at one raw video (Mídia → Projeto ▶): check it is the right take
+     before ordering. Separate player, so the timeline is untouched. -->
+<div id="clipBox" class="clip-box hidden" role="dialog" aria-label="Pré-visualização do vídeo">
+  <div class="clip-box-inner glass">
+    <div class="clip-box-head">
+      <span id="clipBoxPos" class="media-order static"></span>
+      <span id="clipBoxName" class="clip-box-name"></span>
+      <div class="spacer"></div>
+      <button id="clipPrev" class="btn ghost small" title="Anterior (←)">←</button>
+      <button id="clipNext" class="btn ghost small" title="Próximo (→)">→</button>
+      <button id="clipClose" class="btn ghost small" title="Fechar (Esc)">✕</button>
+    </div>
+    <video id="clipVideo" controls playsinline preload="metadata"></video>
+  </div>
+</div>
+
 <div id="tooltip" class="tooltip hidden"></div>
 <div id="toast" class="toast hidden"></div>
 

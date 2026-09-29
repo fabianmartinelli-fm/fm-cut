@@ -1858,3 +1858,38 @@ button.tl-chip:disabled { cursor: default; }
 .timer-chip[data-state="done"] .timer-dot { background: #3ddc97; }
 @keyframes timer-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @media (prefers-reduced-motion: reduce) { .timer-chip .timer-dot { animation: none !important; } }
+
+/* ▶ on raw-video cards + the quick-look player */
+.media-play {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 99px;
+  border: 0;
+  background: rgba(6, 10, 22, 0.72);
+  color: #fff;
+  font-size: 14px;
+  padding-left: 3px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.12s, transform 0.12s, background 0.12s;
+}
+.media-card:hover .media-play { opacity: 1; background: var(--brand); transform: translate(-50%, -50%) scale(1.06); }
+.clip-box {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 6, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+.clip-box-inner { display: flex; flex-direction: column; gap: 10px; padding: 12px; max-width: min(92vw, 1100px); background: rgba(10, 18, 38, 0.96); }
+.clip-box-head { display: flex; align-items: center; gap: 10px; }
+.clip-box-head .spacer { flex: 1; }
+.clip-box-name { font-size: 13px; font-weight: 600; max-width: 50vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-order.static { position: static; }
+#clipVideo { max-height: 78vh; max-width: 100%; border-radius: 10px; background: #000; display: block; }

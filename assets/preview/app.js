@@ -2458,7 +2458,12 @@ S.media = { sources: [], project: [], library: [] };
 S.mediaShelf = 'project';
 let logoQueue = [];
 
+// reorder drag in progress (set on dragstart): the 6s refresh must not
+// re-render the cards out from under the mouse
+let dragName = null;
+
 async function loadMedia() {
+  if (dragName) return;
   try {
     const txt = await (await fetch('/api/media')).text();
     if (txt === S.mediaSig) return; // unchanged: don't reload the video thumbs
@@ -2479,8 +2484,10 @@ function mediaCard(url, name, sub, opts = {}) {
       ? `<button class="media-del" data-remove="${opts.removeScope}" data-name="${escHtml(name)}" title="Remover do projeto (vai para a Lixeira)">✕</button>`
       : '';
   const ord = opts.order ? `<span class="media-order">${opts.order}</span>` : '';
+  const play = opts.playIndex != null
+    ? `<button class="media-play" data-play="${opts.playIndex}" title="Assistir este vídeo">▶</button>` : '';
   const drag = opts.dragName ? ` draggable="true" data-src="${escHtml(opts.dragName)}"` : '';
-  return `<div class="media-card${opts.logo ? ' logo' : ''}"${drag} title="${escHtml(opts.dragName ? `${name} — arraste para mudar a ordem` : name)}">${thumb}${ord}${del}
+  return `<div class="media-card${opts.logo ? ' logo' : ''}"${drag} title="${escHtml(opts.dragName ? `${name} — arraste para mudar a ordem` : name)}">${thumb}${ord}${play}${del}
     <div class="media-name">${escHtml(name)}</div>${sub ? `<div class="media-sub">${escHtml(sub)}</div>` : ''}</div>`;
 }
 
@@ -2507,7 +2514,7 @@ function renderMedia() {
     const prj = S.media.project || [];
     html += `<div><div class="media-group-title">Vídeos brutos${src.length > 1 ? ' · arraste para ordenar' : ''}</div>${src.length
       ? `<div class="media-grid">${src.map((v, i) => mediaCard(v.url, v.name, mb(v.size),
-          { video: true, order: src.length > 1 ? i + 1 : 0, dragName: src.length > 1 ? v.name : '', removeScope: 'source' })).join('')}</div>`
+          { video: true, order: src.length > 1 ? i + 1 : 0, dragName: src.length > 1 ? v.name : '', removeScope: 'source', playIndex: i })).join('')}</div>`
       : '<p class="media-empty">Importe o vídeo gravado para começar.</p>'}</div>`;
     html += `<div><div class="media-group-title">Imagens deste vídeo</div>${prj.length
       ? `<div class="media-grid">${prj.map((m) => mediaCard(m.url, m.name, mb(m.size), { video: m.kind === 'video', removeScope: 'project' })).join('')}</div>`
@@ -2577,6 +2584,8 @@ document.querySelectorAll('.media-tab').forEach((t) => t.addEventListener('click
   renderMedia();
 }));
 $('mediaList').addEventListener('click', async (e) => {
+  const pb = e.target.closest('.media-play');
+  if (pb) { openClipBox(+pb.dataset.play); return; }
   const b = e.target.closest('.media-del');
   if (!b) return;
   if (b.dataset.remove) {
@@ -2611,7 +2620,6 @@ const isFileDrag = (e) => [...(e.dataTransfer ? e.dataTransfer.types : [])].incl
 }));
 
 // reorder raw videos: the gallery order is the story order the cut follows
-let dragName = null;
 $('mediaList').addEventListener('dragstart', (e) => {
   const c = e.target.closest('.media-card[data-src]');
   if (!c) return;
@@ -2638,6 +2646,7 @@ $('mediaList').addEventListener('drop', async (e) => {
   const names = (S.media.sources || []).map((v) => v.name);
   const from = names.indexOf(dragName);
   const to = names.indexOf(c.dataset.src);
+  dragName = null; // renderMedia below detaches the source card, so its dragend never reaches us
   if (from < 0 || to < 0 || from === to) return;
   names.splice(to, 0, names.splice(from, 1)[0]);
   S.media.sources.sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name));
@@ -2652,6 +2661,42 @@ async function saveProject(patch) {
     if (r.ok) { S.media.setup = r.setup; renderFormat(); }
   } catch (e) { toast('Não consegui salvar — o servidor do preview está rodando?', 4000); }
 }
+
+// ---------- quick look at a raw video ----------
+let clipIdx = -1;
+function openClipBox(i) {
+  const src = (S.media && S.media.sources) || [];
+  if (!src[i]) return;
+  clipIdx = i;
+  if (!video.paused) video.pause();
+  $('clipBoxPos').textContent = `${i + 1} de ${src.length}`;
+  $('clipBoxName').textContent = src[i].name;
+  $('clipPrev').disabled = i === 0;
+  $('clipNext').disabled = i === src.length - 1;
+  const cv = $('clipVideo');
+  cv.src = src[i].url;
+  $('clipBox').classList.remove('hidden');
+  cv.play().catch(() => { /* autoplay blocked: the controls are there */ });
+}
+function closeClipBox() {
+  const cv = $('clipVideo');
+  cv.pause();
+  cv.removeAttribute('src');
+  cv.load();
+  clipIdx = -1;
+  $('clipBox').classList.add('hidden');
+}
+$('clipClose').addEventListener('click', closeClipBox);
+$('clipPrev').addEventListener('click', () => openClipBox(clipIdx - 1));
+$('clipNext').addEventListener('click', () => openClipBox(clipIdx + 1));
+$('clipBox').addEventListener('click', (e) => { if (e.target.id === 'clipBox') closeClipBox(); });
+document.addEventListener('keydown', (e) => {
+  if (clipIdx < 0) return;
+  if (e.key === 'Escape') { closeClipBox(); e.stopImmediatePropagation(); }
+  else if (e.key === 'ArrowLeft' && clipIdx > 0) { openClipBox(clipIdx - 1); e.stopImmediatePropagation(); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { openClipBox(clipIdx + 1); e.stopImmediatePropagation(); e.preventDefault(); }
+  else if (e.code === 'Space') { const cv = $('clipVideo'); cv.paused ? cv.play() : cv.pause(); e.stopImmediatePropagation(); e.preventDefault(); }
+}, true); // capture: while the box is open, the timeline shortcuts stay quiet
 
 // ---------- Formato de saída + Processar vídeos ----------
 const FORMAT_OPTS = [
