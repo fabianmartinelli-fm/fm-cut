@@ -148,7 +148,9 @@ of data simply will not appear.
 only appears when the EDL carries a `jcut_timeline`. The hatched orange head on a
 block is the lead — how much voice arrives before that take's picture.
 
-**What the user can do in the UI:** scrub, trim take edges, delete takes, drag
+**What the user can do in the UI:** save the finished video with **Salvar vídeo**
+(Fase 2 tab: the OS save dialog opens in the raw footage folder and the render
+is copied there — `edit/` keeps its own copy), scrub, trim take edges, delete takes, drag
 insert/hook chips — and **mark correction ranges**: park the needle, press `M`
 (or the IN button), move to the end of the problem, press `M` again — the note box
 opens centred over the timeline — then type what should change. Many ranges per pass. Zoom: the slider is anchored on the needle, trackpad pinch

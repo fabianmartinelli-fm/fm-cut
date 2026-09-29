@@ -739,7 +739,27 @@ function dirtyCount() {
   n += S.notes.length; // each correction marker is an unsaved adjustment too
   return n;
 }
+function updateExportBtn() {
+  $('btnExport').classList.toggle('hidden', !(S.tab === 2 && S.state && S.state.finalVideo));
+}
+
+$('btnExport').addEventListener('click', async () => {
+  const b = $('btnExport');
+  b.disabled = true;
+  toast('Escolha onde salvar — a janela abre na pasta do vídeo bruto', 4000);
+  try {
+    const r = await (await fetch('/api/export', { method: 'POST' })).json();
+    if (r.ok) toast(`Vídeo salvo ✓ ${r.path}`, 6000);
+    else if (r.cancelled) toast('Salvamento cancelado', 2500);
+    else toast(r.error || 'Não consegui salvar o vídeo', 5000);
+  } catch (e) {
+    toast('Não consegui salvar — o servidor do preview está rodando?', 5000);
+  }
+  b.disabled = false;
+});
+
 function refreshHeader() {
+  updateExportBtn();
   const n = dirtyCount();
   $('dirtyPill').classList.toggle('hidden', n === 0);
   $('dirtyCount').textContent = n;
@@ -1820,6 +1840,7 @@ document.querySelectorAll('.tab').forEach((tab) =>
     S.tab = Number.isNaN(+v) ? v : +v;
     S.selected = -1;
     if (S.tab === 'post' && !video.paused) video.pause();
+    updateExportBtn();
     updateVideoSrc(); // Fase 2 plays the Phase-2 render when available
     renderAll();
     renderSetup();

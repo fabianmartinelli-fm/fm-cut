@@ -24,6 +24,8 @@ Routes:
   /api/save     POST    body → <edit>/preview_edits.json (atomic), or
                         <edit>/preview_style.json when body.type=="style-setup",
                         <edit>/preview_post.json when body.type=="post-edits"
+  /api/export   POST    copy the final render next to the raw footage — opens the
+                        OS save dialog in that folder ("Salvar vídeo", Fase 2)
 
 Usage:
     uv run helpers/preview_server.py --root <videos_dir>/edit [--port 4820]
@@ -226,6 +228,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "unknown route"}, 404)
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path.split("?", 1)[0] == "/api/export":
+            self._export()
+            return
         if self.path.split("?", 1)[0] != "/api/save":
             self._json({"error": "unknown route"}, 404)
             return
@@ -249,6 +254,72 @@ class Handler(BaseHTTPRequestHandler):
         tmp.write_text(json.dumps(body, ensure_ascii=False, indent=2))
         tmp.replace(out)
         self._json({"ok": True, "file": str(out)})
+
+    # ---- export: "Salvar vídeo" on the Fase-2 tab ----
+    def _export(self) -> None:
+        """Copy the delivered render next to the raw footage (or wherever the user
+        picks). Opens the OS's own save dialog, already in the raw footage folder,
+        so the finished video lands where the project lives instead of in edit/."""
+        try:
+            state = json.loads((self.root / "state.json").read_text())
+        except (OSError, json.JSONDecodeError):
+            state = {}
+        src = self._safe(self.root, state.get("finalVideo") or "final.mp4")
+        if not src or not src.exists():
+            self._json({"error": "ainda não há vídeo final renderizado"}, 404)
+            return
+        dest_dir = self._raw_dir()
+        stem = re.sub(r"[^\w\s.-]", "", str(state.get("project") or "video"), flags=re.U).strip() or "video"
+        name = f"{time.strftime('%Y-%m-%d')} - {stem} - FINAL.mp4"
+        dest = self._save_dialog(dest_dir, name)
+        if dest is None:
+            self._json({"cancelled": True})
+            return
+        if dest.suffix.lower() != ".mp4":
+            dest = dest.with_suffix(".mp4")
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest)
+        except OSError as e:
+            self._json({"error": f"não consegui salvar: {e}"}, 500)
+            return
+        self._json({"ok": True, "path": str(dest)})
+
+    def _raw_dir(self) -> Path:
+        """Folder of the raw footage: first source in edl.json, else edit/.."""
+        try:
+            edl = json.loads((self.root / "edl.json").read_text())
+            first = next(iter((edl.get("sources") or {}).values()), None)
+            if first:
+                return Path(first).expanduser().resolve().parent
+        except (OSError, json.JSONDecodeError, StopIteration):
+            pass
+        return self.root.parent
+
+    @staticmethod
+    def _save_dialog(start: Path, name: str) -> Path | None:
+        """Native "save as" dialog. None = cancelled. Without a dialog on this
+        platform, save straight into the raw footage folder."""
+        try:
+            if sys.platform == "darwin":
+                script = (f'POSIX path of (choose file name with prompt "Salvar vídeo editado" '
+                          f'default location (POSIX file "{start}") default name "{name}")')
+                r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+                return Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else None
+            if sys.platform.startswith("win"):
+                ps = ("Add-Type -AssemblyName System.Windows.Forms;"
+                      "$d=New-Object System.Windows.Forms.SaveFileDialog;"
+                      f"$d.InitialDirectory='{start}';$d.FileName='{name}';$d.Filter='MP4|*.mp4';"
+                      "if($d.ShowDialog() -eq 'OK'){$d.FileName}")
+                r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True)
+                return Path(r.stdout.strip()) if r.stdout.strip() else None
+            if shutil.which("zenity"):
+                r = subprocess.run(["zenity", "--file-selection", "--save", "--confirm-overwrite",
+                                    f"--filename={start / name}"], capture_output=True, text=True)
+                return Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else None
+        except OSError:
+            pass
+        return start / name
 
     # ---- dynamic bits ----
     def _state(self) -> None:
