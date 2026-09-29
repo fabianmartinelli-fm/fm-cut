@@ -118,16 +118,18 @@
           <div id="optCaptions" class="opt-grid"></div>
         </div>
 
-        <div class="setup-group">
-          <div class="group-head"><span class="group-title">Elementos da edição</span></div>
-          <div id="optElements" class="check-row"></div>
+        <!-- right column on Fase 2: elements + note + confirm -->
+        <div class="setup-side">
+          <div class="setup-group">
+            <div class="group-head"><span class="group-title">Elementos da edição</span></div>
+            <div id="optElements" class="check-row"></div>
+          </div>
+          <div class="setup-actions">
+            <textarea id="setupNote" rows="2" placeholder="Observações para a Fase 2 (opcional)"></textarea>
+            <button id="setupGo" class="btn primary">Confirmar e iniciar a Fase 2</button>
+          </div>
+          <span id="setupSummary" class="setup-summary"></span>
         </div>
-
-        <div class="setup-actions">
-          <textarea id="setupNote" rows="1" placeholder="Observações para a Fase 2 (opcional)"></textarea>
-          <button id="setupGo" class="btn primary">Confirmar e iniciar a Fase 2</button>
-        </div>
-        <span id="setupSummary" class="setup-summary"></span>
       </div>
     </section>
 

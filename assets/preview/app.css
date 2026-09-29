@@ -1462,3 +1462,61 @@ button.tl-chip:disabled { cursor: default; }
   justify-content: center;
   padding: 0 6px;
 }
+
+/* ---------- Estilo card on Fase 2: everything visible at once ----------
+   The card is wide and short, so the five groups sit in COLUMNS instead of a
+   scrolling stack: layout choices left, the two text styles in the middle
+   (they are the big visual decision), elements + confirm on the right. A
+   column that still overflows (short screens) scrolls on its own; the
+   confirm button never scrolls away. */
+.ws-top > .setup { overflow: hidden; display: flex; }
+.ws-top > .setup .setup-inner {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.25fr) 232px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "head head head side"
+    "edit hl   cap  side"
+    "acc  hl   cap  side";
+  gap: 12px 22px;
+}
+.ws-top > .setup .setup-head { grid-area: head; }
+.ws-top > .setup .setup-group:has(#optEdit) { grid-area: edit; }
+.ws-top > .setup .setup-group:has(#optAccent) { grid-area: acc; }
+.ws-top > .setup .setup-group:has(#optHeadline) { grid-area: hl; }
+.ws-top > .setup .setup-group:has(#optCaptions) { grid-area: cap; }
+.ws-top > .setup .setup-side { grid-area: side; }
+.ws-top > .setup .setup-group:has(#optHeadline),
+.ws-top > .setup .setup-group:has(#optCaptions) {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+.ws-top > .setup #optHeadline,
+.ws-top > .setup #optCaptions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ws-top > .setup #optHeadline .opt,
+.ws-top > .setup #optCaptions .opt { min-width: 0; }
+.ws-top > .setup #optCaptions .opt-preview.cap,
+.ws-top > .setup #optHeadline .opt-preview.hlbox { width: 100%; }
+/* right column: elements, note, confirm — a vertical control strip */
+.setup-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--stroke);
+}
+.setup-side #optElements { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+.setup-side .chk { width: 100%; }
+.setup-side .setup-actions { flex-direction: column; align-items: stretch; gap: 8px; margin-top: auto; }
+.setup-side .setup-actions textarea { width: 100%; min-height: 54px; }
+.setup-side .setup-summary { line-height: 1.45; }
