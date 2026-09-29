@@ -40,7 +40,21 @@ def digest(p: Path) -> str:
     n_rm = len(edl.get("removed") or [])
     ed = d.get("editData") or {}
 
+    gains = edl.get("gains") or []
+    splits = int(edl.get("splits") or 0)
+    caps = d.get("captions") or []
+    for g in gains:
+        parts.append(f'  · volume: {g.get("beat") or g.get("source")} [{g.get("start")}–{g.get("end")}] {g.get("from", 0):+g} → {g.get("to", 0):+g} dB')
+    for c in caps:
+        parts.append(f'  · legenda [{fmt(c.get("start", 0))}]: "{c.get("from", "")}" → "{c.get("to", "")}"')
+
     head = []
+    if splits:
+        head.append(f"{splits} parte(s) de trechos divididos")
+    if gains:
+        head.append(f"{len(gains)} volume(s) ajustado(s)")
+    if caps:
+        head.append(f"{len(caps)} legenda(s) corrigida(s)")
     if notes:
         head.append(f"{len(notes)} marcação(ões)")
     if n_ch:

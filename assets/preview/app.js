@@ -692,7 +692,7 @@ function draftLayout() {
   let at = 0;
   return S.draft.map((r, i) => {
     if (r.removed) return { ...r, out: t, dur: 0, aout: at, adur: 0 };
-    const g = jcutGeom(i);
+    const g = r.geo || jcutGeom(i);
     const span = r.end - r.start;
     const adur = Math.max(0, span - g.tail);
     const dur = Math.max(0, adur - g.lead);
@@ -724,14 +724,20 @@ function renderedLayout() {
 const draftTotal = () => draftLayout().reduce((a, r) => a + r.dur, 0);
 
 // draft time → rendered time (for scrubbing the old render while editing)
+// Both directions go through SOURCE time, so a split or a trim maps exactly:
+// a draft item's picture starts `lead` into its range, a rendered take's too.
 function draftToRendered(t) {
   const dl = draftLayout();
   const rl = renderedLayout();
   for (let i = dl.length - 1; i >= 0; i--) {
     const d = dl[i];
     if (d.removed || t < d.out) continue;
-    const off = Math.min(t - d.out, (rl[i]?.dur ?? d.dur) - 0.02);
-    return (rl[i]?.out ?? d.out) + Math.max(0, off);
+    const k = d.ri ?? i;
+    const r = rl[k];
+    if (!r) return Math.min(t, S.videoDuration);
+    const src = d.start + ((d.geo || {}).lead || 0) + Math.min(t - d.out, d.dur);
+    const rsrc0 = S.rendered[k].start + jcutGeom(k).lead;
+    return r.out + Math.max(0, Math.min(src - rsrc0, r.dur - 0.02));
   }
   return Math.min(t, S.videoDuration);
 }
@@ -739,25 +745,43 @@ function draftToRendered(t) {
 function renderedToDraft(t) {
   const dl = draftLayout();
   const rl = renderedLayout();
-  for (let i = rl.length - 1; i >= 0; i--) {
-    const r = rl[i];
+  for (let k = rl.length - 1; k >= 0; k--) {
+    const r = rl[k];
     if (t < r.out) continue;
-    if (dl[i]?.removed) return dl[i].out; // playing removed material → park at its slot
-    const off = Math.min(t - r.out, dl[i]?.dur ?? r.dur);
-    return (dl[i]?.out ?? r.out) + off;
+    const src = S.rendered[k].start + jcutGeom(k).lead + (t - r.out);
+    const mine = dl.filter((d) => (d.ri ?? -1) === k);
+    for (const d of mine) {
+      const a = d.start + ((d.geo || {}).lead || 0);
+      if (!d.removed && src >= a && src < a + d.dur) return d.out + (src - a);
+    }
+    // trimmed away or removed: park at the nearest slot of that take
+    const near = mine.find((d) => !d.removed) || mine[0];
+    return near ? near.out : t;
   }
   return t;
 }
 
+// A draft item remembers which rendered take it came from (ri) and its own J-cut
+// geometry — a split shifts every later index, so both have to travel with it.
+function freshDraft() {
+  return S.rendered.map((r, i) => ({
+    ...r, ri: i, geo: jcutGeom(i), removed: false,
+    orig: { start: r.start, end: r.end, gain: r.gain || 0 },
+  }));
+}
+const takeChanged = (r) => r.removed || r.split || r.start !== r.orig.start || r.end !== r.orig.end
+  || (r.gain || 0) !== (r.orig.gain || 0);
+
 // ---------- dirty tracking ----------
 function edlDirty() {
-  return S.draft.some((r) => r.removed || r.start !== r.orig.start || r.end !== r.orig.end);
+  return S.draft.some(takeChanged);
 }
 function insertsDirty() {
   return S.insertsDraft.some((c) => c.start !== c.orig.start || c.end !== c.orig.end);
 }
 function dirtyCount() {
-  let n = S.draft.filter((r) => r.removed || r.start !== r.orig.start || r.end !== r.orig.end).length;
+  let n = S.draft.filter(takeChanged).length;
+  n += Object.keys(S.capEdits || {}).length;
   n += S.insertsDraft.filter((c) => c.start !== c.orig.start || c.end !== c.orig.end).length;
   n += S.notes.length; // each correction marker is an unsaved adjustment too
   return n;
@@ -783,6 +807,7 @@ $('btnExport').addEventListener('click', async () => {
 
 function refreshHeader() {
   updateExportBtn();
+  if (typeof updateTools === 'function') updateTools();
   const n = dirtyCount();
   $('dirtyPill').classList.toggle('hidden', n === 0);
   $('dirtyCount').textContent = n;
@@ -827,8 +852,8 @@ async function applyState(data) {
   // SHORTER than end-start and the takes do not simply abut. Without this the
   // filmstrip and the needle drift a little further at each junction.
   S.jcut = (data.edl && data.edl.jcut_timeline) || null;
-  S.rendered = ranges.map((r) => ({ source: r.source, start: +r.start, end: +r.end, beat: r.beat || '' }));
-  S.draft = S.rendered.map((r) => ({ ...r, removed: false, orig: { start: r.start, end: r.end } }));
+  S.rendered = ranges.map((r) => ({ source: r.source, start: +r.start, end: +r.end, beat: r.beat || '', gain: +(r.gain_db || 0) }));
+  S.draft = freshDraft();
   S.selected = -1;
 
   // style picks: the skill's copy wins, so applying a change (or reopening the
@@ -1422,7 +1447,7 @@ function renderClips() {
   laneVideo.innerHTML = '';
   const dl = draftLayout();
   const rl = renderedLayout();
-  const editable = S.tab === 1;
+  const editable = S.tab === 1 || S.tab === 2;
   dl.forEach((r, i) => {
     if (r.removed && r.dur === 0) {
       // removed: show a slim ghost at its slot
@@ -1438,7 +1463,8 @@ function renderClips() {
     c.style.width = `${Math.max(r.dur * S.pps, 8)}px`;
     c.dataset.i = i;
     if (i === S.selected) c.classList.add('selected');
-    if (r.start !== r.orig.start || r.end !== r.orig.end) c.classList.add('dirty');
+    if (takeChanged(r)) c.classList.add('dirty');
+    if (r.gain) el('div', 'clip-gain', c).textContent = `${r.gain > 0 ? '+' : ''}${r.gain} dB`;
 
     // filmstrip from the rendered cut
     if (S.thumbCount > 0 && rl[i]) {
@@ -1527,15 +1553,17 @@ function renderChips() {
   if (!phase2) return;
 
   laneCaptions.innerHTML = '';
-  for (const c of S.captions) {
+  S.captions.forEach((c, ci) => {
     const start = renderedToDraft(c.start);
     const end = renderedToDraft(c.end);
-    const chip = el('div', 'chip caption', laneCaptions);
+    const edited = (S.capEdits || {})[ci];
+    const chip = el('div', `chip caption${edited != null ? ' dirty' : ''}`, laneCaptions);
     chip.style.left = `${start * S.pps}px`;
     chip.style.width = `${Math.max((end - start) * S.pps, 6)}px`;
-    chip.textContent = c.text;
-    chip.title = c.text;
-  }
+    chip.textContent = edited ?? c.text;
+    chip.title = `${edited ?? c.text} — clique para editar`;
+    chip.dataset.ci = ci;
+  });
 
   // TEXT and IMAGE get their own tracks — a headline and a photo are different
   // kinds of edit, and mixing them on one lane hid the images entirely.
@@ -1729,8 +1757,9 @@ panel.addEventListener('pointerdown', (e) => {
   const clip = e.target.closest('.clip');
   const chip = e.target.closest('.chip.insert');
 
-  if (handle && clip && S.tab === 1) {
+  if (handle && clip && (S.tab === 1 || S.tab === 2)) {
     const i = +handle.dataset.i;
+    pushHist();
     drag = { type: 'trim', i, side: handle.classList.contains('l') ? 'l' : 'r', x0: e.clientX, r: { ...S.draft[i] } };
     try { panel.setPointerCapture(e.pointerId); } catch (err) { /* synthetic/touch */ }
     e.preventDefault();
@@ -1738,13 +1767,20 @@ panel.addEventListener('pointerdown', (e) => {
   }
   if (handle && chip && S.tab === 2) {
     const i = +handle.dataset.i;
+    pushHist();
     drag = { type: 'chip-trim', i, side: handle.classList.contains('l') ? 'l' : 'r', x0: e.clientX, c: { ...S.insertsDraft[i] } };
     try { panel.setPointerCapture(e.pointerId); } catch (err) { /* synthetic/touch */ }
     e.preventDefault();
     return;
   }
+  const capChip = e.target.closest('.chip.caption');
+  if (capChip && S.tab === 2) {
+    openCaptionEditor(+capChip.dataset.ci);
+    return;
+  }
   if (chip && S.tab === 2) {
     const i = +chip.dataset.i;
+    pushHist();
     drag = { type: 'chip-move', i, x0: e.clientX, c: { ...S.insertsDraft[i] } };
     try { panel.setPointerCapture(e.pointerId); } catch (err) { /* synthetic/touch */ }
     e.preventDefault();
@@ -1813,7 +1849,8 @@ laneVideo.addEventListener('dblclick', (e) => {
   const clip = e.target.closest('.clip');
   if (!clip) return;
   const r = S.draft[+clip.dataset.i];
-  r.start = r.orig.start; r.end = r.orig.end; r.removed = false;
+  pushHist();
+  r.start = r.orig.start; r.end = r.orig.end; r.removed = false; r.gain = r.orig.gain || 0;
   renderAll(); refreshHeader();
 });
 
@@ -1840,16 +1877,27 @@ document.addEventListener('keydown', (e) => {
     toast('IN cancelado', 1600);
     return;
   }
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    e.shiftKey ? redo() : undo();
+    return;
+  }
+  if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+    const k = e.key.toLowerCase();
+    if (k === 's') { e.preventDefault(); splitAtNeedle(); return; }
+    if (k === 'v') { e.preventDefault(); openVolume(); return; }
+    if (k === 'e') { e.preventDefault(); openCaptionEditor(); return; }
+    if (k === '+' || k === '=') { e.preventDefault(); nudgeZoom(10); return; }
+    if (k === '-' || k === '_') { e.preventDefault(); nudgeZoom(-10); return; }
+  }
   if (e.code === 'Space') {
     e.preventDefault();
     video.paused ? video.play() : video.pause();
   } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     const step = e.shiftKey ? 1 : 1 / S.fps;
     seekDraft(renderedToDraft(video.currentTime) + (e.key === 'ArrowRight' ? step : -step));
-  } else if ((e.key === 'Delete' || e.key === 'Backspace') && S.selected >= 0 && S.tab === 1) {
-    const r = S.draft[S.selected];
-    r.removed = !r.removed;
-    renderAll(); refreshHeader();
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && S.selected >= 0 && (S.tab === 1 || S.tab === 2)) {
+    toggleRemoveSelected();
   }
 });
 
@@ -1867,6 +1915,188 @@ $('btnMute').addEventListener('click', () => {
   $('btnMute').innerHTML = video.muted ? ICON.mute : ICON.vol;
 });
 $('zoom').addEventListener('input', (e) => setZoom(+e.target.value));
+
+// ---------- manual tools (undo/redo, split, delete, volume, caption, zoom) ----------
+Object.assign(ICON, {
+  undo: '<svg viewBox="0 0 16 16"><path d="M5.2 3.2 1.6 6.6l3.6 3.4V7.8h4.3a3 3 0 0 1 0 6H6v1.6h3.5a4.6 4.6 0 0 0 0-9.2H5.2z"/></svg>',
+  redo: '<svg viewBox="0 0 16 16"><path d="M10.8 3.2l3.6 3.4-3.6 3.4V7.8H6.5a3 3 0 0 0 0 6H10v1.6H6.5a4.6 4.6 0 0 1 0-9.2h4.3z"/></svg>',
+  split: '<svg viewBox="0 0 16 16"><rect x="7.2" y="1" width="1.6" height="14" rx=".8"/><rect x="1" y="4.5" width="5" height="7" rx="1.4" opacity=".55"/><rect x="10" y="4.5" width="5" height="7" rx="1.4" opacity=".55"/></svg>',
+  trash: '<svg viewBox="0 0 16 16"><path d="M6 1.5h4l.6 1.3H14v1.5H2V2.8h3.4L6 1.5zM3.2 5.3h9.6l-.7 8.4a1.5 1.5 0 0 1-1.5 1.3H5.4a1.5 1.5 0 0 1-1.5-1.3l-.7-8.4z"/></svg>',
+  caption: '<svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 9.6l3.8-3.8 1.4 1.4-3.8 3.8H4V9.6z"/></svg>',
+});
+$('toolUndo').innerHTML = ICON.undo;
+$('toolRedo').innerHTML = ICON.redo;
+$('toolSplit').innerHTML = ICON.split;
+$('toolDelete').innerHTML = ICON.trash;
+$('toolVolume').innerHTML = ICON.vol;
+$('toolCaption').innerHTML = ICON.caption;
+
+// history: whole-draft snapshots, taken BEFORE each change
+S.hist = []; S.future = []; S.capEdits = {};
+const snapDraft = () => JSON.stringify({ d: S.draft, i: S.insertsDraft, n: S.notes, c: S.capEdits });
+function pushHist() {
+  S.hist.push(snapDraft());
+  if (S.hist.length > 100) S.hist.shift();
+  S.future = [];
+}
+function restoreDraft(x) {
+  const o = JSON.parse(x);
+  S.draft = o.d; S.insertsDraft = o.i; S.notes = o.n; S.capEdits = o.c || {};
+  renderAll(); refreshHeader();
+}
+function undo() {
+  if (!S.hist.length) { toast('Nada para desfazer', 1500); return; }
+  S.future.push(snapDraft());
+  restoreDraft(S.hist.pop());
+}
+function redo() {
+  if (!S.future.length) { toast('Nada para refazer', 1500); return; }
+  S.hist.push(snapDraft());
+  restoreDraft(S.future.pop());
+}
+
+function splitAtNeedle() {
+  if (S.tab !== 1 && S.tab !== 2) return;
+  const t = renderedToDraft(video.currentTime);
+  const dl = draftLayout();
+  const i = dl.findIndex((d) => !d.removed && t > d.out + 0.08 && t < d.out + d.dur - 0.08);
+  if (i < 0) { toast('Posicione a agulha dentro de um trecho para dividir', 2600); return; }
+  pushHist();
+  const r = S.draft[i];
+  const g = r.geo || jcutGeom(i);
+  const src = +(r.start + (g.lead || 0) + (t - dl[i].out)).toFixed(3);
+  const a = { ...r, end: src, split: true, geo: { lead: g.lead || 0, tail: 0 } };
+  const b = { ...r, start: src, split: true, geo: { lead: 0, tail: g.tail || 0 } };
+  S.draft.splice(i, 1, a, b);
+  S.selected = i + 1;
+  renderAll(); refreshHeader();
+  toast('Trecho dividido ✓ — selecione uma parte para excluir ou ajustar', 3000);
+}
+
+function toggleRemoveSelected() {
+  if (S.selected < 0 || !S.draft[S.selected]) { toast('Clique num trecho da timeline para selecionar', 2200); return; }
+  pushHist();
+  const r = S.draft[S.selected];
+  r.removed = !r.removed;
+  renderAll(); refreshHeader();
+}
+
+function placePop(pop, btn) {
+  const r = btn.getBoundingClientRect();
+  pop.classList.remove('hidden');
+  const w = pop.offsetWidth;
+  pop.style.left = `${Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8)}px`;
+  pop.style.top = `${Math.max(8, r.top - pop.offsetHeight - 10)}px`;
+}
+let volTouched = false;
+function openVolume() {
+  if (S.tab !== 1 && S.tab !== 2) return;
+  const r = S.draft[S.selected];
+  if (!r || r.removed) { toast('Clique num trecho da timeline para ajustar o volume', 2400); return; }
+  $('volRange').value = r.gain || 0;
+  $('volVal').textContent = `${r.gain > 0 ? '+' : ''}${r.gain || 0} dB`;
+  volTouched = false;
+  placePop($('volPop'), $('toolVolume'));
+}
+$('volRange').addEventListener('input', () => {
+  const r = S.draft[S.selected];
+  if (!r) return;
+  if (!volTouched) { pushHist(); volTouched = true; }
+  r.gain = +$('volRange').value;
+  $('volVal').textContent = `${r.gain > 0 ? '+' : ''}${r.gain} dB`;
+  renderClips(); refreshHeader();
+});
+$('volReset').addEventListener('click', () => { $('volRange').value = 0; $('volRange').dispatchEvent(new Event('input')); });
+$('volClose').addEventListener('click', () => $('volPop').classList.add('hidden'));
+
+let capEditing = -1;
+function openCaptionEditor(ci) {
+  if (S.tab !== 2 || !S.captions.length) { toast('A edição de legenda fica na Fase 2', 2200); return; }
+  if (ci == null) {
+    const t = video.currentTime;
+    ci = S.captions.findIndex((c) => t >= c.start && t < c.end);
+    if (ci < 0) ci = S.captions.findIndex((c) => c.start > t);
+    if (ci < 0) { toast('Nenhuma legenda na agulha', 2000); return; }
+  }
+  capEditing = ci;
+  const c = S.captions[ci];
+  $('capInput').value = (S.capEdits || {})[ci] ?? c.text;
+  $('capTime').textContent = `${fmt(c.start)} → ${fmt(c.end)}`;
+  video.currentTime = c.start + 0.01;
+  placePop($('capPop'), $('toolCaption'));
+  $('capInput').focus();
+  $('capInput').select();
+}
+function applyCaption() {
+  const c = S.captions[capEditing];
+  if (!c) return;
+  const v = $('capInput').value.trim();
+  pushHist();
+  if (!v || v === c.text) delete S.capEdits[capEditing];
+  else S.capEdits[capEditing] = v;
+  $('capPop').classList.add('hidden');
+  renderChips(); refreshHeader();
+}
+$('capOk').addEventListener('click', applyCaption);
+$('capCancel').addEventListener('click', () => $('capPop').classList.add('hidden'));
+$('capInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); applyCaption(); }
+  if (e.key === 'Escape') $('capPop').classList.add('hidden');
+});
+
+function nudgeZoom(d) {
+  const v = Math.max(0, Math.min(100, +$('zoom').value + d));
+  $('zoom').value = v;
+  setZoom(v);
+}
+$('zoomIn').addEventListener('click', () => nudgeZoom(10));
+$('zoomOut').addEventListener('click', () => nudgeZoom(-10));
+$('toolUndo').addEventListener('click', undo);
+$('toolRedo').addEventListener('click', redo);
+$('toolSplit').addEventListener('click', splitAtNeedle);
+$('toolDelete').addEventListener('click', toggleRemoveSelected);
+$('toolVolume').addEventListener('click', openVolume);
+$('toolCaption').addEventListener('click', () => openCaptionEditor());
+// the caption tool only means something where captions exist
+function updateTools() {
+  $('toolCaption').disabled = S.tab !== 2;
+}
+
+// ---------- resizable timeline (CapCut-style divider) ----------
+const splitterEl = $('wsSplitter');
+let spDrag = null;
+function setEditorH(h, persist = true) {
+  const ec = $('editorCol');
+  ec.classList.toggle('sized', h != null);
+  ec.style.height = h == null ? '' : `${Math.round(h)}px`;
+  ec.style.maxHeight = h == null ? '' : 'none';
+  if (persist) { try { localStorage.setItem('fmcut.editorH', h == null ? '' : String(Math.round(h))); } catch (e) { /* private */ } }
+  requestAnimationFrame(() => { fitZoom(); renderAll(); fitPlayer(); });
+}
+splitterEl.addEventListener('pointerdown', (e) => {
+  spDrag = { y0: e.clientY, h0: $('editorCol').getBoundingClientRect().height };
+  splitterEl.setPointerCapture(e.pointerId);
+  splitterEl.classList.add('dragging');
+  e.preventDefault();
+});
+splitterEl.addEventListener('pointermove', (e) => {
+  if (!spDrag) return;
+  const stageH = $('stage').getBoundingClientRect().height;
+  const h = Math.max(130, Math.min(stageH - 190, spDrag.h0 - (e.clientY - spDrag.y0)));
+  const ec = $('editorCol');
+  ec.classList.add('sized');
+  ec.style.height = `${Math.round(h)}px`;
+  ec.style.maxHeight = 'none';
+  fitPlayer();
+});
+['pointerup', 'pointercancel'].forEach((ev) => splitterEl.addEventListener(ev, () => {
+  if (!spDrag) return;
+  spDrag = null;
+  splitterEl.classList.remove('dragging');
+  setEditorH($('editorCol').getBoundingClientRect().height);
+}));
+splitterEl.addEventListener('dblclick', () => setEditorH(null));
+try { const h = +localStorage.getItem('fmcut.editorH'); if (h) setEditorH(h, false); } catch (e) { /* private */ }
 
 // ---------- correction markers: button, chips, editor ----------
 $('markIcon').innerHTML = ICON.flag;
@@ -1924,6 +2154,7 @@ document.querySelectorAll('.tab').forEach((tab) =>
     S.selected = -1;
     if (S.tab === 'post' && !video.paused) video.pause();
     updateExportBtn();
+    updateTools();
     updateVideoSrc(); // Fase 2 plays the Phase-2 render when available
     renderAll();
     renderSetup();
@@ -1939,9 +2170,15 @@ $('btnSave').addEventListener('click', async () => {
   const payload = { type: 'timeline-edits' };
   if (edlDirty()) {
     payload.edl = {
+      // the FULL ordered list is authoritative: splits show up as two ranges
       ranges: S.draft.filter((r) => !r.removed).map((r) => ({
         source: r.source, start: +r.start.toFixed(3), end: +r.end.toFixed(3), beat: r.beat,
+        gain_db: +(r.gain || 0), ...(r.split ? { split: true } : {}),
       })),
+      gains: S.draft.filter((r) => !r.removed && (r.gain || 0) !== (r.orig.gain || 0)).map((r) => ({
+        source: r.source, beat: r.beat, start: +r.start.toFixed(3), end: +r.end.toFixed(3), from: r.orig.gain || 0, to: r.gain || 0,
+      })),
+      splits: S.draft.filter((r) => r.split).length,
       removed: S.draft.filter((r) => r.removed).map((r) => ({ source: r.source, beat: r.beat, start: r.orig.start, end: r.orig.end })),
       changes: S.draft.filter((r) => !r.removed && (r.start !== r.orig.start || r.end !== r.orig.end)).map((r) => ({
         source: r.source, beat: r.beat,
@@ -1960,6 +2197,14 @@ $('btnSave').addEventListener('click', async () => {
       wordAccents: S.insertsDraft.filter((c) => c.kind === 'word').map((c) => ({ ref: c.ref, text: c.label, start: +c.start.toFixed(3), end: +c.end.toFixed(3) })),
     };
   }
+  const capKeys = Object.keys(S.capEdits || {});
+  if (capKeys.length) {
+    // times on the RENDERED timeline (captions.json space), text before → after
+    payload.captions = capKeys.map((k) => {
+      const c = S.captions[+k];
+      return { start: +c.start.toFixed(3), end: +c.end.toFixed(3), from: c.text, to: S.capEdits[k] };
+    });
+  }
   if (S.notes.length) {
     // written in the draft timeline the user was actually looking at, plus the
     // rendered-timeline equivalent so the skill can find the spot in cut.mp4
@@ -1977,7 +2222,10 @@ $('btnSave').addEventListener('click', async () => {
     S.savedPending = true;
     S.notes = [];
     S.pendingIn = null;
-    S.draft.forEach((r) => { r.orig = { start: r.start, end: r.end }; if (r.removed) r.hardRemoved = true; });
+    S.draft.forEach((r) => { r.orig = { start: r.start, end: r.end, gain: r.gain || 0 }; r.split = false; if (r.removed) r.hardRemoved = true; });
+    S.capApplied = { ...(S.capApplied || {}), ...(S.capEdits || {}) };
+    S.capEdits = {};
+    S.hist = []; S.future = [];
     // keep visual state but clear dirty counters
     S.draft = S.draft.filter((r) => !r.removed);
     S.insertsDraft.forEach((c) => { c.orig = { start: c.start, end: c.end }; });
@@ -1988,9 +2236,11 @@ $('btnSave').addEventListener('click', async () => {
 });
 
 $('btnDiscard').addEventListener('click', () => {
-  S.draft = S.rendered.map((r) => ({ ...r, removed: false, orig: { start: r.start, end: r.end } }));
+  S.draft = freshDraft();
   buildInsertsDraft();
   S.notes = [];
+  S.capEdits = {};
+  S.hist = []; S.future = [];
   S.pendingIn = null;
   S.editingNote = null;
   $('noteEditor').classList.add('hidden');

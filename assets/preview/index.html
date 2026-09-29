@@ -167,6 +167,8 @@
       </div>
     </section>
   </div><!-- /.ws-top -->
+  <!-- drag to give the timeline more or less height (double-click: automatic) -->
+  <div id="wsSplitter" class="ws-splitter" title="Arraste para aumentar ou diminuir a timeline · duplo clique volta ao automático"><span></span></div>
   <div id="editorCol" class="editor-col">
     <div class="transport glass">
       <button id="btnPlay" class="btn icon" title="Play/Pause (espaço)"></button>
@@ -177,9 +179,22 @@
       <button id="btnMark" class="btn mark" title="Marcar IN / OUT (tecla M)">
         <span id="markIcon"></span><span id="markText">IN</span>
       </button>
+      <!-- manual tools (CapCut-style). Every change is a draft until "Salvar
+           ajustes"; the skill applies it and re-renders. -->
+      <div class="tools" id="tools">
+        <button id="toolUndo" class="tool" title="Desfazer (⌘Z)"></button>
+        <button id="toolRedo" class="tool" title="Refazer (⇧⌘Z)"></button>
+        <span class="tool-sep"></span>
+        <button id="toolSplit" class="tool" title="Dividir o trecho na agulha (S)"></button>
+        <button id="toolDelete" class="tool" title="Excluir / restaurar o trecho selecionado (Delete)"></button>
+        <button id="toolVolume" class="tool" title="Volume do trecho selecionado (V)"></button>
+        <button id="toolCaption" class="tool" title="Editar a legenda na agulha — Fase 2 (E)"></button>
+      </div>
       <div class="spacer"></div>
       <span class="dim small">zoom</span>
+      <button id="zoomOut" class="tool small-tool" title="Diminuir zoom (−)">−</button>
       <input id="zoom" type="range" min="0" max="100" value="0" title="Zoom da timeline (centrado na agulha)">
+      <button id="zoomIn" class="tool small-tool" title="Aumentar zoom (+)">+</button>
       <button id="btnFit" class="btn ghost small" title="Ajustar à janela">fit</button>
     </div>
 
@@ -297,7 +312,12 @@
     <li><span>arrastar</span><span>as <b>bordas</b> de um take ajustam o corte</span></li>
     <li><span>duplo-clique</span><span>num take desfaz o ajuste dele</span></li>
     <li><span>pinça</span><span>zoom no trackpad, onde está o cursor</span></li>
-    <li><span>barra de zoom</span><span>amplia a partir da agulha</span></li>
+    <li><span>barra de zoom</span><span>amplia a partir da agulha · <kbd>−</kbd> <kbd>+</kbd></span></li>
+    <li><span><kbd>S</kbd></span><span>divide o trecho na agulha</span></li>
+    <li><span><kbd>V</kbd></span><span>volume do trecho selecionado</span></li>
+    <li><span><kbd>E</kbd></span><span>edita a legenda na agulha (Fase 2)</span></li>
+    <li><span><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd></span><span>desfazer / refazer</span></li>
+    <li><span>divisória</span><span>arraste a linha acima da timeline para aumentar ou diminuir</span></li>
   </ul>
   <p class="help-credit"><b>Editor de Vídeos com IA</b> (skill <code>/fm-cut</code>) — adaptado pela FM Solutions a partir do
     <a href="https://github.com/fillrochaa/edvid" target="_blank" rel="noopener">Edvid</a>,
@@ -315,6 +335,19 @@
     <div class="spacer"></div>
     <button id="noteOk" class="btn primary small">salvar marcação</button>
   </div>
+</div>
+
+<!-- volume of the selected take (gain_db, applied by render.py at extraction) -->
+<div id="volPop" class="tool-pop glass hidden">
+  <div class="tool-pop-head"><span class="group-title">Volume do trecho</span><span id="volVal" class="post-count">0 dB</span></div>
+  <input id="volRange" type="range" min="-12" max="12" step="0.5" value="0">
+  <div class="tool-pop-actions"><button id="volReset" class="btn ghost small">0 dB</button><button id="volClose" class="btn primary small">OK</button></div>
+</div>
+<!-- caption text fix (Fase 2): typo, a word Whisper misheard, punctuation -->
+<div id="capPop" class="tool-pop glass hidden">
+  <div class="tool-pop-head"><span class="group-title">Editar legenda</span><span id="capTime" class="post-count"></span></div>
+  <input id="capInput" class="post-input" type="text" spellcheck="true">
+  <div class="tool-pop-actions"><button id="capCancel" class="btn ghost small">Cancelar</button><button id="capOk" class="btn primary small">Aplicar</button></div>
 </div>
 
 <div id="tooltip" class="tooltip hidden"></div>

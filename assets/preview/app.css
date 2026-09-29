@@ -1753,3 +1753,78 @@ button.tl-chip:disabled { cursor: default; }
   .setup-inner { grid-template-columns: minmax(0, 1fr) 210px !important; }
   .setup-side .chk-name { font-size: 11.5px; }
 }
+
+/* ---------- manual tools (transport bar) ---------- */
+.tools { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: rgba(0, 0, 0, 0.22); }
+.tool {
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.tool svg { width: 14px; height: 14px; fill: currentColor; display: block; }
+.tool:hover:not(:disabled) { color: var(--text); background: rgba(139, 92, 246, 0.2); }
+.tool:disabled { opacity: 0.3; cursor: not-allowed; }
+.tool-sep { width: 1px; height: 18px; background: var(--stroke); margin: 0 3px; }
+.small-tool { width: 24px; height: 24px; font-size: 14px; }
+.clip-gain {
+  position: absolute;
+  right: 4px;
+  top: 18px;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.85);
+  color: #fff;
+  pointer-events: none;
+}
+.chip.caption.dirty { outline: 1.5px solid var(--brand-light); outline-offset: -1.5px; }
+
+/* popovers for volume / caption */
+.tool-pop {
+  position: fixed;
+  z-index: 60;
+  width: 280px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(10, 18, 38, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.tool-pop-head { display: flex; align-items: baseline; justify-content: space-between; }
+.tool-pop input[type="range"] { width: 100%; }
+.tool-pop .post-input { font-size: 13px; padding: 8px 10px; }
+.tool-pop-actions { display: flex; justify-content: flex-end; gap: 6px; }
+
+/* ---------- resizable timeline divider ---------- */
+.ws-splitter {
+  flex: 0 0 8px;
+  margin: -6px 0;
+  display: grid;
+  place-items: center;
+  cursor: row-resize;
+  touch-action: none;
+  z-index: 3;
+}
+.ws-splitter span {
+  width: 52px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.12s, width 0.12s;
+}
+.ws-splitter:hover span,
+.ws-splitter.dragging span { background: var(--brand-light); width: 84px; }
+/* a height the user dragged to: the timeline panel fills it */
+.editor-col.sized .timeline-panel { flex: 1 1 0; }

@@ -198,6 +198,22 @@ the layer questions in chat.
   `speech_regions.py` (warn if an edge clips a word — the user's intent wins, but
   say so), update `edl.json`, re-render, `verify_cut.py`.
 - `editData` — insert/hook/behind timings → edit-data.json → re-render Phase 2.
+- **Manual tools** (transport bar: desfazer/refazer, dividir `S`, excluir,
+  volume `V`, editar legenda `E`, zoom ±). They work on both phases. Undo/redo
+  never reach you; only the saved result does.
+  - `edl.ranges` is the **full ordered list** after the user's edits and is
+    authoritative. A split shows up as two consecutive ranges (`split: true`),
+    and usually one of them is later removed.
+  - `edl.gains` is per-take volume: copy each `gain_db` into the matching range.
+    Cap the boost around +12 dB (room tone), and say so if they asked for more.
+  - `captions[]` holds text fixes on the rendered timeline (`start`/`end`,
+    `from` → `to`). Fix the word(s) in `transcripts/cut.json`, regenerate
+    `captions.json` (and `caption-cues.json` for stacked), and re-render
+    **Phase 2 only**, because the picture did not change.
+  - Any edl change on Fase 2 means re-render Phase 1 → rebuild segments.json →
+    Phase 2 → remix the soundtrack. Keep the approved grade and style.
+  - The timeline divider (drag / double-click) is per-viewer UI state. Nothing
+    is sent.
 
 Then delete `preview_edits.json` and update `state.json`.
 
