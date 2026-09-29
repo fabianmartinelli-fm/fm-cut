@@ -1520,3 +1520,103 @@ button.tl-chip:disabled { cursor: default; }
 .setup-side .setup-actions { flex-direction: column; align-items: stretch; gap: 8px; margin-top: auto; }
 .setup-side .setup-actions textarea { width: 100%; min-height: 54px; }
 .setup-side .setup-summary { line-height: 1.45; }
+
+/* ---------- flash sub-options (under "Flash na transição") ---------- */
+.flash-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 9px 9px;
+  margin-top: -2px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--stroke);
+}
+.flash-label { font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+.flash-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.flash-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--dim);
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  padding: 3px 8px 3px 5px;
+  cursor: pointer;
+}
+.flash-group:not(:first-child) .flash-chip { padding-left: 8px; }
+.flash-chip.on { color: var(--text); border-color: var(--brand); background: rgba(139, 92, 246, 0.2); }
+/* 22×14 loop of each effect over a dark "shot" — the chip shows what it does */
+.fx {
+  position: relative;
+  width: 22px;
+  height: 14px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2b3550, #151b2b);
+}
+.fx::after { content: ''; position: absolute; inset: 0; }
+.fx-white::after { background: #fff; animation: fx-white 1.6s infinite; }
+@keyframes fx-white { 0%, 55% { opacity: 0; } 62% { opacity: 1; } 100% { opacity: 0; } }
+.fx-beam::after {
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  animation: fx-beam 1.6s infinite;
+}
+@keyframes fx-beam { 0%, 45% { transform: translateX(-120%) skewX(-18deg); } 75%, 100% { transform: translateX(320%) skewX(-18deg); } }
+.fx-zoom::after {
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, 0.9) 0 4deg, transparent 4deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 25%, black 60%);
+  mask-image: radial-gradient(circle, transparent 25%, black 60%);
+  opacity: 0;
+  animation: fx-zoom 1.6s infinite;
+}
+@keyframes fx-zoom { 0%, 50% { opacity: 0; transform: scale(0.6); } 62% { opacity: 1; } 100% { opacity: 0; transform: scale(1.8); } }
+.fx-glitch::after {
+  background:
+    linear-gradient(transparent 20%, rgba(0, 255, 240, 0.8) 20% 35%, transparent 35% 60%, rgba(255, 0, 170, 0.8) 60% 72%, transparent 72%);
+  opacity: 0;
+  animation: fx-glitch 1.6s steps(1) infinite;
+}
+@keyframes fx-glitch { 0%, 55% { opacity: 0; transform: none; } 58% { opacity: 1; transform: translateX(3px); } 64% { opacity: 1; transform: translateX(-4px); } 70%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fx::after { animation: none; opacity: 0.6; } }
+/* the elements list scrolls inside the right column (the flash options make it
+   long); note + confirm stay pinned at the bottom, always visible */
+.setup-side > .setup-group { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 3px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
+.setup-side .setup-actions { margin-top: 0; flex: 0 0 auto; }
+.setup-side .setup-summary { flex: 0 0 auto; max-height: 4.4em; overflow: hidden; }
+/* everything is visible in the columns, so the text summary is redundant here —
+   its space goes to the flash options */
+.setup-side .setup-summary { display: none; }
+.setup-side .setup-actions textarea { min-height: 38px; }
+.ws-top > .setup .setup-inner { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.25fr) 250px; }
+
+/* flash options live in the left column, under the accent */
+.ws-top > .setup .setup-inner {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "head head head side"
+    "edit hl   cap  side"
+    "acc  hl   cap  side"
+    "fx   hl   cap  side";
+}
+.ws-top > .setup #flashOptsGroup { grid-area: fx; min-height: 0; overflow-y: auto; }
+#flashOptsGroup .flash-opts { margin-top: 0; }
+#flashOptsGroup { max-width: 230px; }
+/* final placement: the flash options run as ONE horizontal bar under the two
+   text-style columns — Tipo | Força | Onde side by side, a single row tall */
+.ws-top > .setup .setup-inner {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head head head side"
+    "edit hl   cap  side"
+    "acc  hl   cap  side"
+    "acc  fx   fx   side";
+}
+#flashOptsGroup { max-width: none; overflow: visible; }
+#flashOptsGroup .flash-opts { flex-direction: row; flex-wrap: wrap; gap: 8px 22px; align-items: flex-start; }

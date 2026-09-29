@@ -64,7 +64,7 @@ const LAYOUT = {
 // blooms, with a click on the cut. Data, not JSX — `transitions` in
 // edit-data.json — so the windows stay visible to the preview timeline and
 // retimeable without touching code.
-type CutFlash = {at: number; intensity?: number; sfx?: string; volume?: number};
+type CutFlash = {at: number; intensity?: number; sfx?: string; volume?: number; kind?: 'beam' | 'white' | 'zoom' | 'glitch'};
 
 export const CustomGraphics: React.FC = () => {
   const d = editData as {splitInserts?: SplitInsert[]; transitions?: CutFlash[]};
@@ -79,60 +79,135 @@ export const CustomGraphics: React.FC = () => {
 };
 
 // ============ CUT FLASH =======================================================
-// Starts BEFORE the cut and peaks on it. A transition that begins on the cut
-// frame reads as a flash after the fact; leading it by two frames makes the
-// light look like the thing that caused the change.
-// `at` is the cut time exactly as segments.json states it — VIDEO_LAG lines it
-// up with the frame the picture actually changes on, same as the split windows.
-const FLASH_LEAD = 2; // frames before the cut
-const FLASH_LEN = 7; // total, ~230ms at 30fps
+// A transition accent ON a cut. Data, not JSX: `transitions[]` in edit-data.json
+// (one {at} per cut, `at` exactly as segments.json states it) plus one
+// `transitionStyle` for the whole video, picked on the Estilo card:
+//   kind:     beam (light beam whip) · white (flash to white) ·
+//             zoom (radial speed burst) · glitch (RGB slice jitter)
+//   strength: sutil · media · forte  → length + peak opacity
+// A per-entry `kind` / `intensity` overrides the style for that one cut.
+// It starts BEFORE the cut and peaks on it: a transition that begins on the cut
+// frame reads as a flash after the fact; leading it makes the light look like
+// the thing that caused the change.
+// `at` + VIDEO_LAG lines it up with the frame the picture actually changes on.
+type FlashKind = 'beam' | 'white' | 'zoom' | 'glitch';
+type FlashStyle = {kind?: FlashKind; strength?: 'sutil' | 'media' | 'forte'};
+const FLASH_STRENGTH = {
+  sutil: {len: 7, lead: 2, k: 0.6},
+  media: {len: 10, lead: 3, k: 0.85},
+  forte: {len: 14, lead: 4, k: 1},
+} as const;
 
 const CutFlashes: React.FC<{items: CutFlash[]}> = ({items}) => {
   const frame = useCurrentFrame();
-  const {fps, width} = useVideoConfig();
+  const {fps, width, height} = useVideoConfig();
+  const style = ((editData as {transitionStyle?: FlashStyle}).transitionStyle ?? {}) as FlashStyle;
+  const S = FLASH_STRENGTH[style.strength ?? 'media'] ?? FLASH_STRENGTH.media;
 
   const active = items.find((it) => {
     const c = Math.round(it.at * fps) + VIDEO_LAG;
-    return frame >= c - FLASH_LEAD && frame < c - FLASH_LEAD + FLASH_LEN;
+    return frame >= c - S.lead && frame < c - S.lead + S.len;
   });
   if (!active) return null;
 
   const c = Math.round(active.at * fps) + VIDEO_LAG;
-  const k = active.intensity ?? 1;
-  const p = (frame - (c - FLASH_LEAD)) / (FLASH_LEN - 1); // 0..1 pela janela
+  const kind: FlashKind = active.kind ?? style.kind ?? 'beam';
+  const k = (active.intensity ?? 1) * S.k;
+  const t0 = c - S.lead;
+  const p = (frame - t0) / Math.max(1, S.len - 1); // 0..1 across the window
+  const clampOpt = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
+  // shared envelope: fast attack up to the cut, slower release after it
+  const env = interpolate(frame, [t0, c, c + 1, t0 + S.len], [0, 1, 1, 0], clampOpt);
 
-  // beam sweeps left→right, brightest as it crosses centre
-  const x = interpolate(p, [0, 1], [-1.35 * width, 1.35 * width]);
-  const beam = interpolate(p, [0, 0.35, 1], [0, 1 * k, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  // the bloom is short and lands ON the cut, not spread across the window
-  const bloom = interpolate(frame, [c - 1, c, c + 2], [0, 0.5 * k, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  return (
-    <AbsoluteFill style={{pointerEvents: 'none'}}>
-      <AbsoluteFill style={{backgroundColor: '#fff', opacity: bloom, mixBlendMode: 'screen'}} />
+  let body: React.ReactNode = null;
+  if (kind === 'white') {
+    body = <AbsoluteFill style={{backgroundColor: '#fff', opacity: env * k}} />;
+  } else if (kind === 'zoom') {
+    // radial speed streaks rushing out from the centre + a soft core bloom
+    const s = interpolate(p, [0, 1], [0.6, 1.9]);
+    body = (
       <AbsoluteFill style={{overflow: 'hidden'}}>
-        <div
+        <AbsoluteFill
           style={{
-            position: 'absolute',
-            top: '-30%',
-            left: 0,
-            width: width * 0.46,
-            height: '160%',
-            transform: `translateX(${x.toFixed(1)}px) rotate(-18deg)`,
             background:
-              'linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.95) 50%,rgba(255,255,255,0) 100%)',
-            opacity: beam,
+              'repeating-conic-gradient(from 0deg at 50% 45%, rgba(255,255,255,0.9) 0deg 1.2deg, rgba(255,255,255,0) 1.2deg 7deg)',
+            WebkitMaskImage: 'radial-gradient(circle at 50% 45%, transparent 18%, black 55%)',
+            maskImage: 'radial-gradient(circle at 50% 45%, transparent 18%, black 55%)',
+            transform: `scale(${s.toFixed(3)})`,
+            opacity: env * k * 0.75,
+            filter: 'blur(1.5px)',
             mixBlendMode: 'screen',
-            filter: 'blur(16px)',
+          }}
+        />
+        <AbsoluteFill
+          style={{
+            background: 'radial-gradient(circle at 50% 45%, rgba(255,255,255,0.9), rgba(255,255,255,0) 60%)',
+            opacity: env * k * 0.5,
+            mixBlendMode: 'screen',
           }}
         />
       </AbsoluteFill>
+    );
+  } else if (kind === 'glitch') {
+    // deterministic slices (hashed off frame + index — never Math.random: each
+    // frame renders independently and a true random re-rolls every frame)
+    const bars = Array.from({length: 9}, (_, i) => {
+      const h = (Math.sin((frame + 1) * 12.9898 + i * 78.233) * 43758.5453) % 1;
+      const r = Math.abs(h);
+      return {top: r * height, hgt: 14 + ((i * 37) % 70), dx: (r - 0.5) * 120, cyan: i % 2 === 0};
+    });
+    body = (
+      <AbsoluteFill style={{overflow: 'hidden', opacity: env * k}}>
+        {bars.map((b, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: b.top,
+              width,
+              height: b.hgt,
+              transform: `translateX(${b.dx.toFixed(1)}px)`,
+              background: b.cyan ? 'rgba(0,255,240,0.45)' : 'rgba(255,0,170,0.45)',
+              mixBlendMode: 'screen',
+            }}
+          />
+        ))}
+        <AbsoluteFill style={{backgroundColor: '#fff', opacity: 0.18, mixBlendMode: 'screen'}} />
+      </AbsoluteFill>
+    );
+  } else {
+    // beam: a light beam whips across while a short bloom lands ON the cut
+    const x = interpolate(p, [0, 1], [-1.35 * width, 1.35 * width]);
+    const beam = interpolate(p, [0, 0.35, 1], [0, k, 0], clampOpt);
+    const bloom = interpolate(frame, [c - 1, c, c + 2], [0, 0.5 * k, 0], clampOpt);
+    body = (
+      <>
+        <AbsoluteFill style={{backgroundColor: '#fff', opacity: bloom, mixBlendMode: 'screen'}} />
+        <AbsoluteFill style={{overflow: 'hidden'}}>
+          <div
+            style={{
+              position: 'absolute',
+              top: '-30%',
+              left: 0,
+              width: width * 0.46,
+              height: '160%',
+              transform: `translateX(${x.toFixed(1)}px) rotate(-18deg)`,
+              background:
+                'linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.95) 50%,rgba(255,255,255,0) 100%)',
+              opacity: beam,
+              mixBlendMode: 'screen',
+              filter: 'blur(16px)',
+            }}
+          />
+        </AbsoluteFill>
+      </>
+    );
+  }
+
+  return (
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
+      {body}
       <Sequence from={c} durationInFrames={10} layout="none">
         <Sfx src={active.sfx ?? 'cut-click.mp3'} volume={active.volume ?? 0.9} />
       </Sequence>

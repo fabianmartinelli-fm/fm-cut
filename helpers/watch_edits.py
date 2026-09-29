@@ -101,6 +101,13 @@ def style_digest(p: Path) -> str:
     off = [k for k, v in (d.get("elements") or {}).items() if not v]
     if off:
         out.append(f'  · fora: {", ".join(off)}')
+    if (d.get("elements") or {}).get("flashCut"):
+        f = d.get("flash") or {}
+        n = d.get("flashNames") or {}
+        out.append(f'  · flash: {n.get("kind") or f.get("kind", "white")} · força {n.get("strength") or f.get("strength", "media")}'
+                   f' · onde: {n.get("where") or f.get("where", "beats")}'
+                   f' → edit-data "transitionStyle": {{"kind": "{f.get("kind", "white")}", "strength": "{f.get("strength", "media")}"}}'
+                   f' + transitions[] em {"cada troca de beat" if f.get("where", "beats") == "beats" else "cada entrada de layout" if f.get("where") == "layout" else "todos os cortes"}')
     if (d.get("note") or "").strip():
         out.append(f'  · observação do usuário: {d["note"].strip()}')
     # The soundtrack is part of the Fase-2 delivery, not an afterthought. A key

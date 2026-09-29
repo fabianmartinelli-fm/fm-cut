@@ -628,9 +628,32 @@ function defaultStyle() {
     captions: STYLE_CATALOG.captions[0].id,
     accent: ACCENT_DEFAULT,
     elements,
+    flash: { ...FLASH_DEFAULT },
     note: '',
   };
 }
+
+// "Flash na transição" sub-options — shown under the checkbox when it is on.
+// Each chip carries a tiny CSS demo of the effect (.fx-<kind>).
+const FLASH_DEFAULT = { kind: 'white', strength: 'media', where: 'beats' };
+const FLASH_OPTS = {
+  kind: [
+    { id: 'white', name: 'Flash branco' },
+    { id: 'beam', name: 'Feixe de luz' },
+    { id: 'zoom', name: 'Zoom burst' },
+    { id: 'glitch', name: 'Glitch' },
+  ],
+  strength: [
+    { id: 'sutil', name: 'Sutil' },
+    { id: 'media', name: 'Média' },
+    { id: 'forte', name: 'Forte' },
+  ],
+  where: [
+    { id: 'beats', name: 'Troca de assunto' },
+    { id: 'layout', name: 'Mudança de layout' },
+    { id: 'all', name: 'Todos os cortes' },
+  ],
+};
 
 const fmt = (t) => {
   if (!isFinite(t) || t < 0) t = 0;
@@ -812,6 +835,7 @@ async function applyState(data) {
   // session) shows what is actually rendered — not a stale local selection
   S.style = { ...defaultStyle(), ...(S.state.style || {}) };
   S.style.elements = { ...defaultStyle().elements, ...((S.state.style || {}).elements || {}) };
+  S.style.flash = { ...FLASH_DEFAULT, ...((S.state.style || {}).flash || {}) };
   $('setupNote').value = S.style.note || '';
   // the skill opened the gate → land the user on Fase 2, where the style card is
   if (S.state.awaitingStyle) S.tab = 2;
@@ -1273,6 +1297,29 @@ function renderSetup() {
     el('div', 'chk-box', row);
     el('div', 'chk-ico', row).innerHTML = e.icon || '';
     el('div', 'chk-name', row).textContent = e.name;
+    if (e.id === 'flashCut') {
+      $('flashOptsGroup').classList.toggle('hidden', !on);
+      const f = S.style.flash;
+      const box = $('flashOpts');
+      box.innerHTML = '';
+      const group = (key, label) => {
+        const g = el('div', 'flash-group', box);
+        el('div', 'flash-label', g).textContent = label;
+        const chips = el('div', 'flash-chips', g);
+        for (const o of FLASH_OPTS[key]) {
+          const c = el('button', `flash-chip${f[key] === o.id ? ' on' : ''}`, chips);
+          c.dataset.fgroup = key;
+          c.dataset.fval = o.id;
+          if (key === 'kind') el('span', `fx fx-${o.id}`, c);
+          el('span', 'flash-chip-name', c).textContent = o.name;
+        }
+      };
+      if (on) {
+        group('kind', 'Tipo');
+        group('strength', 'Força');
+        group('where', 'Onde');
+      }
+    }
     // the one element with a one-time cost (the local model download): say so
     // BEFORE the pick, so it starts at the gate — not after the render
     if (e.id === 'musicAI' && S.music && S.music.installed === false) {
@@ -1292,6 +1339,12 @@ $('styleSetup').addEventListener('click', (e) => {
   if (opt) {
     const key = {edits: 'edit', headlines: 'headline', captions: 'captions'}[opt.dataset.group];
     S.style[key] = opt.dataset.id;
+    renderSetup();
+    return;
+  }
+  const fo = e.target.closest('[data-fgroup]');
+  if (fo) {
+    S.style.flash = { ...S.style.flash, [fo.dataset.fgroup]: fo.dataset.fval };
     renderSetup();
     return;
   }
@@ -1325,6 +1378,13 @@ $('setupGo').addEventListener('click', async () => {
     elementNames: STYLE_CATALOG.elements
       .filter((e) => S.style.elements[e.id])
       .map((e) => e.name),
+    // only meaningful when flashCut is on; the watcher prints it then
+    flash: { ...S.style.flash },
+    flashNames: {
+      kind: FLASH_OPTS.kind.find((o) => o.id === S.style.flash.kind)?.name,
+      strength: FLASH_OPTS.strength.find((o) => o.id === S.style.flash.strength)?.name,
+      where: FLASH_OPTS.where.find((o) => o.id === S.style.flash.where)?.name,
+    },
     note: S.style.note,
   };
   const res = await fetch('/api/save', {

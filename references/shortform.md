@@ -321,20 +321,33 @@ that wants the same zone to after `hook.endSec` (e.g. move a 2.5s cutaway to
 
 ## Flash na transição (`elements.flashCut`)
 
-A light beam whips across the frame with a bloom and a dry click. Data-driven:
-one entry per cut in `transitions[]`, `at` being the cut time **exactly as
-segments.json states it** — `VIDEO_LAG` lines it up with the frame the picture
-changes on, same as the split windows. Never index it off its own clock.
+A transition accent on a cut, with a dry click. When the box is ticked, the
+user picks three things under it on the Estilo card (`preview_style.json` →
+`flash`). **Build exactly those. Never fall back to a default look they did
+not choose.**
+
+| Pick | Values | In `edit-data.json` |
+|---|---|---|
+| **Tipo** `kind` | `white` Flash branco (dip to white) · `beam` Feixe de luz (diagonal beam + bloom) · `zoom` Zoom burst (radial streaks) · `glitch` (RGB slices) | `transitionStyle.kind` |
+| **Força** `strength` | `sutil` 7f · `media` 10f · `forte` 14f (window, lead 2/3/4f, peak 0.6/0.85/1) | `transitionStyle.strength` |
+| **Onde** `where` | `beats` every cut where the EDL `beat` changes · `layout` every split-insert entry · `all` every cut | which cuts go into `transitions[]` |
 
 ```json
-"transitions": [{"at": 11.7}]
+"transitionStyle": {"kind": "white", "strength": "media"},
+"transitions": [{"at": 7.0}, {"at": 17.9}, {"at": 36.9}]
 ```
 
-Default placement when the element is ON: **one per split-insert entry, not per
-cut.** The video has ~27 cuts; a flash on each one stops reading as an accent and
-starts reading as a strobe. Put it where the layout changes, which is where the
-transition means something. Optional per entry: `intensity` (default 1), `sfx`,
-`volume`.
+`at` is the cut time **exactly as segments.json states it**. `VIDEO_LAG` lines
+it up with the frame the picture changes on, the same as the split windows.
+Never index it off its own clock. `beats` is the default and usually right: a
+flash marks a turn in the script (problem → solution → example → CTA), so
+~5 on a 60s Reel. `all` on a 20+ cut video reads as a strobe; say so if they
+pick it. Optional per entry: `kind` / `intensity` override, `sfx`, `volume`.
+
+Why the picks exist: an edit once shipped with 6 beam flashes of 7 frames,
+three of them at 0.7. They were on the video, and the user still asked why
+there was no flash. The window and the peak are now tied to a strength the
+user saw on screen.
 
 - **The beam LEADS the cut by 2 frames.** Starting it on the cut frame reads as a
   flash after the fact — the eye sees the picture change, then the light. Leading
