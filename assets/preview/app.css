@@ -284,9 +284,10 @@ main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding
 .ws-top > .setup { padding: 14px 16px; }
 .editor-col {
   flex: 0 0 auto;
-  /* the player needs the height more than the timeline does; extra tracks
-     (Fase 2) scroll inside the panel */
-  height: clamp(210px, 31vh, 350px);
+  /* the timeline takes only the height its tracks need (3 on Fase 1, more on
+     Fase 2) and the player gets the rest; past 42vh the tracks scroll */
+  height: auto;
+  max-height: 42vh;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1358,3 +1359,6 @@ button.tl-chip:disabled { cursor: default; }
   padding: 2px 8px;
   white-space: nowrap;
 }
+
+/* workspace: the timeline panel sizes to its tracks instead of stretching */
+.editor-col .timeline-panel { flex: 0 1 auto; min-height: 0; }
