@@ -156,6 +156,19 @@ insert/hook chips — and **mark correction ranges**: park the needle, press `M`
 opens centred over the timeline — then type what should change. Many ranges per pass. Zoom: the slider is anchored on the needle, trackpad pinch
 on the pointer. Shortcuts live behind the **?** button at the bottom right.
 
+**The edit stopwatch** (header) shows how long the SYSTEM takes, from
+"Processar vídeos" to a `final.mp4` ready to save (`<edit>/timer.json`, helper
+`helpers/timer.py <edit> start|pause|resume|stop`). The server starts it on
+"Processar vídeos" and resumes it when the user saves a style pick or
+adjustments. **You** drive the rest, because only you know when the work waits:
+- `pause` when you hand the cut over for approval (and at any question that
+  blocks the work).
+- `resume` when the user answers in chat (approval, a reply to your question).
+- `stop` when the Fase-2 `final.mp4` (with soundtrack) is delivered.
+- After a re-render asked for by adjustments, `stop` again when it is ready.
+- Never leave it running while you wait on the user: the number is the
+  product's speed claim.
+
 **The Mídia panel** (left, CapCut-style) has two shelves:
 - **Projeto:** the raw footage folder, plus this edit's images in `<edit>/media/`.
 - **Marcas:** the brand-logo library in `<skill>/library/logos/`.
@@ -166,7 +179,11 @@ inventory/EDL. An image → it is a candidate insert, and it outranks any search
 for the same subject. A brand logo → use that exact file whenever the brand is
 named. Delete `preview_media.json` once you have taken the items into account.
 Logo rules (library first, never altered, archive official finds) are in the
-track reference under "Brand logos".
+track reference under "Brand logos". The library ships pre-seeded with ~46
+tech/AI marks (OpenAI, Anthropic/Claude, Google/Gemini, Microsoft, Meta,
+NVIDIA, Apple, AWS…). They are transparent PNGs from Wikimedia Commons, plus
+the SVG when there is one. The list is `library/seed_brands.json`, and
+`brand_library.py seed` (re)downloads it.
 
 ### The Estilo card (top of Fase 2)
 

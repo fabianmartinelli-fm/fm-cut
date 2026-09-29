@@ -1828,3 +1828,33 @@ button.tl-chip:disabled { cursor: default; }
 .ws-splitter.dragging span { background: var(--brand-light); width: 84px; }
 /* a height the user dragged to: the timeline panel fills it */
 .editor-col.sized .timeline-panel { flex: 1 1 0; }
+
+/* ---------- edit stopwatch (header) ---------- */
+.timer-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--stroke);
+  font-size: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.timer-chip + .head-actions { margin-left: 12px; }
+.timer-time {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.timer-label { color: var(--dim); }
+.timer-dot { width: 8px; height: 8px; border-radius: 99px; background: var(--dim); }
+.timer-chip[data-state="running"] .timer-dot { background: var(--brand-light); animation: timer-pulse 1.2s ease-in-out infinite; }
+.timer-chip[data-state="paused"] .timer-dot { background: #f5b942; }
+.timer-chip[data-state="done"] { border-color: rgba(61, 220, 151, 0.45); }
+.timer-chip[data-state="done"] .timer-dot { background: #3ddc97; }
+@keyframes timer-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .timer-chip .timer-dot { animation: none !important; } }

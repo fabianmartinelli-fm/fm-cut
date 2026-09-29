@@ -347,6 +347,8 @@ def main() -> None:
                     help="substituir mesmo que o destino seja um clone git")
     ap.add_argument("--no-remotion", action="store_true",
                     help="não instalar a skill do Remotion (só a Fase 1)")
+    ap.add_argument("--no-brands", action="store_true",
+                    help="não baixar a biblioteca de logos de tecnologia/IA (Wikimedia)")
     ap.add_argument("--music", action="store_true",
                     help="já instalar a trilha com IA local (ACE-Step 1.5, grátis; "
                          "baixa ~10 GB de modelo). Sem isso, a skill instala na "
@@ -487,6 +489,14 @@ def main() -> None:
     # them looking for something that is not there.
     onde = instalados[0] if len(instalados) == 1 else \
         ", ".join(instalados[:-1]) + " e " + instalados[-1]
+
+    if not args.no_brands and dests:
+        log()
+        log("biblioteca de marcas (logos oficiais de tecnologia/IA, Wikimedia):")
+        r = subprocess.run(["uv", "run", "python", "helpers/brand_library.py", "seed"],
+                           cwd=dests[0])
+        if r.returncode:
+            log("  ! não concluiu — rode depois: uv run python helpers/brand_library.py seed")
 
     if args.music and dests:
         log()

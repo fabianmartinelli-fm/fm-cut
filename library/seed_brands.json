@@ -1,0 +1,342 @@
+{
+  "_readme": "Marcas de tecnologia e IA pré-carregadas por `brand_library.py seed`. Só o Wikimedia Commons, só arquivos que representam a marca oficial. O repositório guarda esta LISTA; os arquivos das logos são baixados na máquina de quem instala (git ignora library/logos/). Para incluir uma marca: slug, nome, apelidos e o título exato do arquivo no Commons.",
+  "brands": [
+    {
+      "slug": "openai",
+      "name": "OpenAI",
+      "aliases": [
+        "open ai"
+      ],
+      "commons": "OpenAI logo 2025 (wordmark).svg"
+    },
+    {
+      "slug": "chatgpt",
+      "name": "ChatGPT",
+      "aliases": [
+        "chat gpt",
+        "gpt"
+      ],
+      "commons": "ChatGPT-Logo.svg"
+    },
+    {
+      "slug": "anthropic",
+      "name": "Anthropic",
+      "aliases": [],
+      "commons": "Anthropic logo.svg"
+    },
+    {
+      "slug": "claude",
+      "name": "Claude",
+      "aliases": [
+        "claude ai",
+        "claude code"
+      ],
+      "commons": "Claude AI logo.svg"
+    },
+    {
+      "slug": "google",
+      "name": "Google",
+      "aliases": [],
+      "commons": "Google 2015 logo.svg"
+    },
+    {
+      "slug": "gemini",
+      "name": "Google Gemini",
+      "aliases": [
+        "gemini"
+      ],
+      "commons": "Google Gemini logo 2025.svg"
+    },
+    {
+      "slug": "microsoft",
+      "name": "Microsoft",
+      "aliases": [],
+      "commons": "Microsoft logo (2012).svg"
+    },
+    {
+      "slug": "copilot",
+      "name": "Microsoft Copilot",
+      "aliases": [
+        "copilot"
+      ],
+      "commons": "Microsoft Copilot wordmark.svg"
+    },
+    {
+      "slug": "meta",
+      "name": "Meta",
+      "aliases": [
+        "meta platforms",
+        "facebook inc"
+      ],
+      "commons": "Meta Platforms Inc. logo.svg"
+    },
+    {
+      "slug": "nvidia",
+      "name": "NVIDIA",
+      "aliases": [
+        "nvidea",
+        "invidia"
+      ],
+      "commons": "NVIDIA logo.svg"
+    },
+    {
+      "slug": "apple",
+      "name": "Apple",
+      "aliases": [],
+      "commons": "Apple logo black.svg"
+    },
+    {
+      "slug": "amazon",
+      "name": "Amazon",
+      "aliases": [],
+      "commons": "Amazon logo.svg"
+    },
+    {
+      "slug": "aws",
+      "name": "AWS",
+      "aliases": [
+        "amazon web services"
+      ],
+      "commons": "Amazon Web Services Logo.svg"
+    },
+    {
+      "slug": "ibm",
+      "name": "IBM",
+      "aliases": [],
+      "commons": "IBM logo.svg"
+    },
+    {
+      "slug": "intel",
+      "name": "Intel",
+      "aliases": [],
+      "commons": "Intel logo (2020, dark blue).svg"
+    },
+    {
+      "slug": "amd",
+      "name": "AMD",
+      "aliases": [],
+      "commons": "AMD Logo.svg"
+    },
+    {
+      "slug": "tesla",
+      "name": "Tesla",
+      "aliases": [],
+      "commons": "Tesla Motors Logo.svg"
+    },
+    {
+      "slug": "mistral",
+      "name": "Mistral AI",
+      "aliases": [
+        "mistral",
+        "le chat"
+      ],
+      "commons": "Mistral AI logo (2025–).svg"
+    },
+    {
+      "slug": "hugging-face",
+      "name": "Hugging Face",
+      "aliases": [
+        "huggingface"
+      ],
+      "commons": "Hf-logo-with-title.svg"
+    },
+    {
+      "slug": "deepseek",
+      "name": "DeepSeek",
+      "aliases": [
+        "deep seek"
+      ],
+      "commons": "DeepSeek logo.svg"
+    },
+    {
+      "slug": "perplexity",
+      "name": "Perplexity",
+      "aliases": [
+        "perplexity ai"
+      ],
+      "commons": "Perplexity AI logo.svg"
+    },
+    {
+      "slug": "github",
+      "name": "GitHub",
+      "aliases": [
+        "git hub"
+      ],
+      "commons": "GitHub Invertocat Logo.svg"
+    },
+    {
+      "slug": "github-copilot",
+      "name": "GitHub Copilot",
+      "aliases": [],
+      "commons": "GitHub Copilot logo.svg"
+    },
+    {
+      "slug": "salesforce",
+      "name": "Salesforce",
+      "aliases": [],
+      "commons": "Salesforce.com logo.svg"
+    },
+    {
+      "slug": "oracle",
+      "name": "Oracle",
+      "aliases": [],
+      "commons": "Oracle logo.svg"
+    },
+    {
+      "slug": "samsung",
+      "name": "Samsung",
+      "aliases": [],
+      "commons": "Samsung Orig Wordmark BLACK RGB.png"
+    },
+    {
+      "slug": "adobe",
+      "name": "Adobe",
+      "aliases": [],
+      "commons": "Adobe logo and wordmark (2017).svg"
+    },
+    {
+      "slug": "notion",
+      "name": "Notion",
+      "aliases": [],
+      "commons": "Notion-logo.svg"
+    },
+    {
+      "slug": "zapier",
+      "name": "Zapier",
+      "aliases": [],
+      "commons": "Zapier logo.svg"
+    },
+    {
+      "slug": "n8n",
+      "name": "n8n",
+      "aliases": [
+        "n oito n",
+        "nhaten"
+      ],
+      "commons": "N8n-logo-new.svg"
+    },
+    {
+      "slug": "midjourney",
+      "name": "Midjourney",
+      "aliases": [
+        "mid journey"
+      ],
+      "commons": "Midjourney Emblem.svg"
+    },
+    {
+      "slug": "cursor",
+      "name": "Cursor",
+      "aliases": [
+        "cursor ai"
+      ],
+      "commons": "Cursor logo.svg"
+    },
+    {
+      "slug": "youtube",
+      "name": "YouTube",
+      "aliases": [
+        "you tube"
+      ],
+      "commons": "YouTube Logo 2017.svg"
+    },
+    {
+      "slug": "instagram",
+      "name": "Instagram",
+      "aliases": [
+        "insta"
+      ],
+      "commons": "Instagram logo 2016.svg"
+    },
+    {
+      "slug": "tiktok",
+      "name": "TikTok",
+      "aliases": [
+        "tik tok"
+      ],
+      "commons": "Tiktok logo.png"
+    },
+    {
+      "slug": "linkedin",
+      "name": "LinkedIn",
+      "aliases": [
+        "linked in"
+      ],
+      "commons": "LinkedIn Logo 2013.svg"
+    },
+    {
+      "slug": "whatsapp",
+      "name": "WhatsApp",
+      "aliases": [
+        "whats app",
+        "zap"
+      ],
+      "commons": "WhatsApp.svg"
+    },
+    {
+      "slug": "x",
+      "name": "X",
+      "aliases": [
+        "twitter"
+      ],
+      "commons": "X logo 2023.svg"
+    },
+    {
+      "slug": "vercel",
+      "name": "Vercel",
+      "aliases": [],
+      "commons": "Vercel logo black.svg"
+    },
+    {
+      "slug": "cloudflare",
+      "name": "Cloudflare",
+      "aliases": [],
+      "commons": "Cloudflare Logo.svg"
+    },
+    {
+      "slug": "qwen",
+      "name": "Qwen",
+      "aliases": [
+        "alibaba qwen"
+      ],
+      "commons": "Qwen logo.svg"
+    },
+    {
+      "slug": "figma",
+      "name": "Figma",
+      "aliases": [],
+      "commons": "Figma-logo.svg"
+    },
+    {
+      "slug": "slack",
+      "name": "Slack",
+      "aliases": [],
+      "commons": "Slack Technologies Logo.svg"
+    },
+    {
+      "slug": "hubspot",
+      "name": "HubSpot",
+      "aliases": [
+        "hub spot"
+      ],
+      "commons": "HubSpot Logo.svg"
+    },
+    {
+      "slug": "shopify",
+      "name": "Shopify",
+      "aliases": [],
+      "commons": "Shopify logo 2018.svg"
+    },
+    {
+      "slug": "stripe",
+      "name": "Stripe",
+      "aliases": [],
+      "commons": "Stripe Logo, revised 2016.svg"
+    },
+    {
+      "slug": "airtable",
+      "name": "Airtable",
+      "aliases": [],
+      "commons": "Airtable Logo.svg"
+    }
+  ]
+}

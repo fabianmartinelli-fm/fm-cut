@@ -842,6 +842,8 @@ async function applyState(data) {
   S.fps = S.state.fps || 24;
   S.savedPending = !!data.hasPendingEdits;
   S.music = data.music || {};
+  S.timer = data.timer || null;
+  renderTimer();
 
   $('projectName').textContent = S.state.project || 'Editor de Vídeos com IA';
   $('stateMessage').textContent = S.state.message || '';
@@ -1915,6 +1917,33 @@ $('btnMute').addEventListener('click', () => {
   $('btnMute').innerHTML = video.muted ? ICON.mute : ICON.vol;
 });
 $('zoom').addEventListener('input', (e) => setZoom(+e.target.value));
+
+// ---------- edit stopwatch (header) ----------
+// timer.json = runs of work time. It pauses while the edit waits on the user and
+// stops when final.mp4 is ready to save — so the number is how long the SYSTEM
+// took, not how long the user thought about the style.
+const pad2 = (n) => String(n).padStart(2, '0');
+function fmtClock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
+}
+function renderTimer() {
+  const t = S.timer;
+  const chip = $('timerChip');
+  if (!t || !(t.runs || []).length) { chip.classList.add('hidden'); return; }
+  const now = Date.now() / 1000;
+  const work = t.runs.reduce((a, r) => a + ((r.end || now) - r.start), 0);
+  const wall = ((t.runs[t.runs.length - 1].end || now) - t.runs[0].start);
+  chip.classList.remove('hidden');
+  chip.dataset.state = t.state;
+  $('timerTime').textContent = fmtClock(work);
+  $('timerLabel').textContent = t.state === 'running' ? 'processando'
+    : t.state === 'paused' ? 'aguardando você'
+    : t.state === 'done' ? 'pronto para salvar' : '';
+  chip.title = `Tempo de processamento: ${fmtClock(work)} · tempo total (com as suas decisões): ${fmtClock(wall)}`;
+}
+setInterval(() => { if (S.timer && S.timer.state === 'running') renderTimer(); }, 1000);
 
 // ---------- manual tools (undo/redo, split, delete, volume, caption, zoom) ----------
 Object.assign(ICON, {

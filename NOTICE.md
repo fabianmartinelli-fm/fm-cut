@@ -25,3 +25,12 @@ postagem. Só duas coisas pedem atenção:
 
 A música gerada pelo ACE-Step pode ser usada comercialmente (licença MIT). A
 responsabilidade pelo conteúdo que você publica continua sendo sua.
+
+## Logos de marcas
+
+A biblioteca de marcas (`library/`) é baixada **na sua máquina** pelo instalador,
+a partir do [Wikimedia Commons](https://commons.wikimedia.org). O repositório
+guarda só a lista (`library/seed_brands.json`), nunca os arquivos. Cada logo é
+marca registrada do respectivo dono. Use apenas para identificar a empresa de
+que o vídeo fala, sem alterar a marca e sem sugerir parceria ou endosso. A
+licença e a página de origem de cada arquivo ficam em `library/logos/index.json`.

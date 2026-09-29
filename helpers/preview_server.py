@@ -48,6 +48,7 @@ from urllib.parse import parse_qs, quote, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import brand_library  # noqa: E402  (stdlib-only sibling helper)
+import timer as edit_timer  # noqa: E402  (stdlib-only sibling helper)
 
 APP_DIR = Path(__file__).resolve().parent.parent / "assets" / "preview"
 PEAKS_PER_SEC = 40
@@ -282,6 +283,9 @@ class Handler(BaseHTTPRequestHandler):
             "post-edits": "preview_post.json",
         }.get(body.get("type"), "preview_edits.json")
         out = self.root / name
+        # a style pick or saved adjustments put the system back to work
+        if name in ("preview_style.json", "preview_edits.json"):
+            edit_timer.resume(self.root)
         tmp = out.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, ensure_ascii=False, indent=2))
         tmp.replace(out)
@@ -386,6 +390,7 @@ class Handler(BaseHTTPRequestHandler):
         if not files:
             self._json({"error": "importe pelo menos um vídeo bruto antes de processar"}, 400)
             return
+        edit_timer.start(self.root)  # the stopwatch starts with the work
         self._write_json("preview_process.json", {
             "type": "process", "aspect": setup.get("aspect", "source"),
             "rawDir": str(raw), "files": files, "note": str(body.get("note", "")).strip(),
@@ -605,6 +610,7 @@ class Handler(BaseHTTPRequestHandler):
             "mtimes": mtimes,
             "videoDuration": probe_duration(video) if video else 0,
             "hasPendingEdits": edits_p.exists(),
+            "timer": edit_timer.load(self.root),
             # local music engine status, so the Estilo tab can say BEFORE the pick
             # that "Trilha sonora com IA" still has a one-time download ahead
             "music": {"installed": _music_engine_installed()},

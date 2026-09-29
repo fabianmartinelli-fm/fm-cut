@@ -10,6 +10,7 @@ __pycache__/
 # the user's brand-logo library is their data, not the repo's
 library/*
 !library/README.md
+!library/seed_brands.json
 
 # local tooling
 node_modules/
