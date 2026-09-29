@@ -236,7 +236,9 @@ def install_into(src: Path, skills_dir: Path, force: bool,
     # .git is here as a second line of defence: the branches above should mean
     # we never iterate a checkout, but if one ever slips through, losing the
     # repository is unrecoverable while losing a copied file is not.
-    KEEP = {".venv", ".env", ".git"}
+    # library/ is the user's own data (brand logos they uploaded or the skill
+    # archived) — an update must never cost it.
+    KEEP = {".venv", ".env", ".git", "library"}
     if dest.exists():
         for entry in dest.iterdir():
             if entry.name in KEEP:

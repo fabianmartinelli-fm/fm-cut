@@ -448,6 +448,41 @@ licensing, prints license+author), then `google_images.py` (needs
 `GOOGLE_API_KEY`+`GOOGLE_CSE_ID`, mind rights — pass `--rights cc`, flag
 licensing to the user for logos/celebrities). Keep photographer credits.
 
+**The user's own images come first.** Files dropped into the preview's **Mídia →
+Projeto** land in `<edit>/media/` and are announced by `watch_edits.py`. They
+are the user saying "use this here": prefer them over any search for the same
+subject.
+
+### Brand logos: library first, never altered
+
+A logo is a registered mark. On screen it appears **exactly as the brand
+publishes it**. You may scale it (keeping the aspect ratio), set it on a plain
+neutral plate or card when contrast demands, and animate its position,
+opacity or scale. You may never recolor, redraw, trace, re-typeset, crop it
+into another shape, stretch it, add effects inside it or "clean it up". A
+recreated logo is always wrong, even when it looks close.
+
+For every brand the video names (hook card logo, split-screen art, inserts):
+
+1. **Local library:** `uv run python helpers/brand_library.py find "<brand>"`.
+   Exit 0 prints the file path. Copy that file into `remotion/public/brand/` and
+   use it untouched. It is a normalized exact match on name, slug or alias,
+   deliberately not fuzzy: the wrong company's mark is worse than a search.
+   Try the spelling the transcript used and the official name.
+2. **This edit's media** (`<edit>/media/`), if the user dropped the logo there.
+3. **Not found?** Keep doing what the skill always did: find the **official**
+   logo. Use the brand's press or media kit first, then Wikimedia Commons (the
+   SVG, `wikimedia_images.py`), and only then other sources, with the license
+   flagged to the user. Prefer SVG or a transparent PNG. Then **archive it** so
+   the next edit skips the search:
+   `brand_library.py add <file> --name "<Brand>" --aliases "<variants>" --source <url> --license "<terms>"`.
+   Archive only a logo you are confident is official. A guess stays out of the
+   library.
+
+The library lives in `<skill>/library/logos/`. It belongs to the user: git
+ignores it and the installer preserves it across updates. The **Marcas** shelf
+in the preview shows it on a light checker, so the mark is seen as stored.
+
 ## Phase 3 — soundtrack (short-form)
 
 The soundtrack is generated **locally and for free** with **ACE-Step 1.5**

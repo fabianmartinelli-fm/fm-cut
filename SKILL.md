@@ -156,6 +156,18 @@ insert/hook chips — and **mark correction ranges**: park the needle, press `M`
 opens centred over the timeline — then type what should change. Many ranges per pass. Zoom: the slider is anchored on the needle, trackpad pinch
 on the pointer. Shortcuts live behind the **?** button at the bottom right.
 
+**The Mídia panel** (left, CapCut-style) has two shelves:
+- **Projeto:** the raw footage folder, plus this edit's images in `<edit>/media/`.
+- **Marcas:** the brand-logo library in `<skill>/library/logos/`.
+
+Every upload is logged to `<edit>/preview_media.json`, and `watch_edits.py`
+announces it. A new raw video → transcribe it and fold it into the
+inventory/EDL. An image → it is a candidate insert, and it outranks any search
+for the same subject. A brand logo → use that exact file whenever the brand is
+named. Delete `preview_media.json` once you have taken the items into account.
+Logo rules (library first, never altered, archive official finds) are in the
+track reference under "Brand logos".
+
 ### The Estilo tab (between Fase 1 and Fase 2)
 
 The cut is approved and nothing about the LOOK of Fase 2 is decided. **Do not ask

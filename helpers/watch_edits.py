@@ -132,6 +132,26 @@ def post_digest(p: Path) -> str:
     return "\n".join(out)
 
 
+def media_digest(p: Path) -> str:
+    """Files dropped into the preview's Mídia panel."""
+    try:
+        items = json.loads(p.read_text()).get("items") or []
+    except (OSError, json.JSONDecodeError) as e:
+        return f"preview_media.json ilegível ({e.__class__.__name__})"
+    out = ["MÍDIA ADICIONADA NO PREVIEW:"]
+    for it in items:
+        sc = it.get("scope")
+        if sc == "library":
+            al = f" (apelidos: {', '.join(it['aliases'])})" if it.get("aliases") else ""
+            out.append(f"  · marca na biblioteca: {it.get('name')}{al} → use EXATAMENTE este arquivo quando a marca for citada")
+        elif sc == "source":
+            out.append(f"  · vídeo bruto novo: {it.get('file')} → transcreva e inclua no inventário/EDL se fizer parte da edição")
+        else:
+            out.append(f"  · imagem/clipe desta edição: {it.get('file')} → candidato a insert/tela dividida")
+    out.append("  → depois de considerar, apague preview_media.json")
+    return "\n".join(out)
+
+
 def fmt(t: float) -> str:
     m, s = divmod(max(0.0, float(t)), 60)
     return f"{int(m)}:{s:05.2f}"
@@ -143,6 +163,7 @@ def main() -> int:
         root / "preview_edits.json": digest,
         root / "preview_style.json": style_digest,
         root / "preview_post.json": post_digest,
+        root / "preview_media.json": media_digest,
     }
     # a file already sitting there at startup means it is pending — say so once
     last: dict[Path, float | None] = {}

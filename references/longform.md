@@ -106,6 +106,11 @@ existe.
 
 ## Helpers de Fase 2/3
 
+**Brand logos and the user's own images:** same rules as short-form. Use the
+library first (`brand_library.py find`), then `<edit>/media/`, then the official
+source, archived afterwards. Never alter a logo. See "Brand logos: library
+first, never altered" in `references/shortform.md`.
+
 ---
 
 ## Chaves opcionais (nunca pedidas na instalação)

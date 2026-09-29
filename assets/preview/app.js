@@ -2082,6 +2082,159 @@ $('postCopyTags').addEventListener('click', () => {
   const d = postDraftFor(n);
   copyText((n.hashtags || []).filter((t) => !d.off.includes(t)).join(' '), 'Hashtags');
 });
+// ---------- Mídia panel (CapCut-style bin) ----------
+// Shelves: "Projeto" = raw footage folder + this edit's images (<edit>/media/);
+// "Marcas" = brand-logo library shared by every edit (<skill>/library/logos/).
+// Uploads stream to POST /api/upload; the server logs each one to
+// preview_media.json, which watch_edits.py relays to the agent.
+const VIDEO_RE = /\.(mp4|mov|m4v|mkv|webm)$/i;
+const IMAGE_RE = /\.(png|svg|webp|jpe?g)$/i;
+S.media = { sources: [], project: [], library: [] };
+S.mediaShelf = 'project';
+let logoQueue = [];
+
+async function loadMedia() {
+  try {
+    const txt = await (await fetch('/api/media')).text();
+    if (txt === S.mediaSig) return; // unchanged: don't reload the video thumbs
+    S.mediaSig = txt;
+    S.media = JSON.parse(txt);
+    renderMedia();
+  } catch (e) { /* server restarting */ }
+}
+
+function mediaCard(url, name, sub, opts = {}) {
+  const thumb = opts.video
+    ? `<video class="media-thumb" src="${url}#t=1" muted preload="metadata"></video>`
+    : `<img class="media-thumb" src="${url}" alt="" loading="lazy">`;
+  const del = opts.slug ? `<button class="media-del" data-slug="${escHtml(opts.slug)}" title="Remover da biblioteca">✕</button>` : '';
+  return `<div class="media-card${opts.logo ? ' logo' : ''}" title="${escHtml(name)}">${thumb}${del}
+    <div class="media-name">${escHtml(name)}</div>${sub ? `<div class="media-sub">${escHtml(sub)}</div>` : ''}</div>`;
+}
+
+function renderMedia() {
+  document.querySelectorAll('.media-tab').forEach((t) => t.classList.toggle('active', t.dataset.shelf === S.mediaShelf));
+  const lib = S.mediaShelf === 'library';
+  $('mediaInput').accept = lib ? 'image/png,image/svg+xml,image/webp,image/jpeg' : 'video/*,image/*';
+  $('mediaHint').textContent = lib ? 'ou arraste a logo oficial (PNG/SVG) aqui' : 'ou arraste vídeos e imagens aqui';
+  const mb = (n) => `${(n / 1048576).toFixed(n > 1048576 * 10 ? 0 : 1)} MB`;
+  let html = '';
+  if (lib) {
+    const items = S.media.library || [];
+    html = items.length
+      ? `<div class="media-grid">${items.map((l) => mediaCard(l.url, l.name,
+          (l.aliases || []).join(', ') || (l.source === 'upload' ? 'enviada por você' : 'oficial'),
+          { logo: true, slug: l.slug })).join('')}</div>`
+      : `<p class="media-empty">Nenhuma marca salva ainda. Envie a logo oficial das empresas que você cita nos vídeos e ela passa a ser usada exatamente assim em todas as edições. Sem ela, o Claude procura a logo oficial sozinho.</p>`;
+  } else {
+    const src = S.media.sources || [];
+    const prj = S.media.project || [];
+    html += `<div><div class="media-group-title">Vídeos brutos</div>${src.length
+      ? `<div class="media-grid">${src.map((v) => mediaCard(v.url, v.name, mb(v.size), { video: true })).join('')}</div>`
+      : '<p class="media-empty">Importe o vídeo gravado para começar.</p>'}</div>`;
+    html += `<div><div class="media-group-title">Imagens deste vídeo</div>${prj.length
+      ? `<div class="media-grid">${prj.map((m) => mediaCard(m.url, m.name, mb(m.size), { video: m.kind === 'video' })).join('')}</div>`
+      : '<p class="media-empty">Prints, fotos ou gráficos que o Claude pode usar nesta edição.</p>'}</div>`;
+  }
+  $('mediaList').innerHTML = html;
+}
+
+async function uploadFile(file, scope, extra = {}) {
+  const qs = new URLSearchParams({ scope, filename: file.name, ...extra });
+  const r = await (await fetch(`/api/upload?${qs}`, { method: 'POST', body: file })).json();
+  if (!r.ok) throw new Error(r.error || 'falha no envio');
+  return r;
+}
+
+async function importFiles(files) {
+  files = [...files];
+  if (!files.length) return;
+  if (S.mediaShelf === 'library') {
+    logoQueue = files.filter((f) => IMAGE_RE.test(f.name));
+    if (logoQueue.length < files.length) toast('Logo precisa ser PNG, SVG, WEBP ou JPG', 3500);
+    nextLogo();
+    return;
+  }
+  for (const f of files) {
+    const scope = VIDEO_RE.test(f.name) ? 'source' : IMAGE_RE.test(f.name) ? 'project' : null;
+    if (!scope) { toast(`Formato não suportado: ${f.name}`, 3500); continue; }
+    toast(`Enviando ${f.name}…`, 60000);
+    try {
+      await uploadFile(f, scope);
+      toast(scope === 'source' ? `Vídeo bruto importado ✓ — o Claude já foi avisado` : `Imagem adicionada ✓`, 3500);
+    } catch (e) { toast(`Não consegui enviar ${f.name}: ${e.message}`, 5000); }
+  }
+  loadMedia();
+}
+
+function nextLogo() {
+  const f = logoQueue[0];
+  $('logoForm').classList.toggle('hidden', !f);
+  if (!f) return;
+  $('logoFormPreview').src = URL.createObjectURL(f);
+  $('logoName').value = f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/\blogo\b/ig, '').trim();
+  $('logoAliases').value = '';
+  $('logoName').focus();
+  $('logoName').select();
+}
+
+$('logoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = logoQueue.shift();
+  if (!f) return;
+  try {
+    await uploadFile(f, 'library', { name: $('logoName').value.trim(), aliases: $('logoAliases').value });
+    toast('Marca salva na biblioteca ✓', 3000);
+  } catch (err) { toast(`Não consegui salvar: ${err.message}`, 5000); }
+  nextLogo();
+  loadMedia();
+});
+$('logoCancel').addEventListener('click', () => { logoQueue.shift(); nextLogo(); });
+
+$('mediaImport').addEventListener('click', () => $('mediaInput').click());
+$('mediaInput').addEventListener('change', (e) => { importFiles(e.target.files); e.target.value = ''; });
+document.querySelectorAll('.media-tab').forEach((t) => t.addEventListener('click', () => {
+  S.mediaShelf = t.dataset.shelf;
+  logoQueue = [];
+  $('logoForm').classList.add('hidden');
+  renderMedia();
+}));
+$('mediaList').addEventListener('click', async (e) => {
+  const b = e.target.closest('.media-del');
+  if (!b) return;
+  const item = (S.media.library || []).find((l) => l.slug === b.dataset.slug);
+  if (!confirm(`Remover a marca "${item ? item.name : b.dataset.slug}" da biblioteca?`)) return;
+  await fetch('/api/library/delete', { method: 'POST', body: JSON.stringify({ slug: b.dataset.slug }) });
+  loadMedia();
+});
+
+// drag and drop onto the whole panel
+const mediaPanel = $('mediaPanel');
+['dragenter', 'dragover'].forEach((ev) => mediaPanel.addEventListener(ev, (e) => {
+  e.preventDefault();
+  mediaPanel.classList.add('dragging');
+}));
+['dragleave', 'drop'].forEach((ev) => mediaPanel.addEventListener(ev, (e) => {
+  e.preventDefault();
+  if (ev === 'dragleave' && mediaPanel.contains(e.relatedTarget)) return;
+  mediaPanel.classList.remove('dragging');
+  if (ev === 'drop') importFiles(e.dataTransfer.files);
+}));
+
+// collapse / expand, remembered per viewer
+function setMediaCollapsed(c) {
+  document.body.classList.toggle('media-collapsed', c);
+  $('mediaExpand').classList.toggle('hidden', !c);
+  try { localStorage.setItem('fmcut.mediaCollapsed', c ? '1' : '0'); } catch (e) { /* private mode */ }
+  requestAnimationFrame(() => { fitZoom(); renderAll(); });
+}
+$('mediaCollapse').addEventListener('click', () => setMediaCollapsed(true));
+$('mediaExpand').addEventListener('click', () => setMediaCollapsed(false));
+try { if (localStorage.getItem('fmcut.mediaCollapsed') === '1') setMediaCollapsed(true); } catch (e) { /* ignore */ }
+
+loadMedia();
+setInterval(loadMedia, 6000); // the agent archives logos it finds, too
+
 $('postSave').addEventListener('click', async () => {
   const nets = (S.post && S.post.platforms) || [];
   const payload = {

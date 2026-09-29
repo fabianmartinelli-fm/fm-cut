@@ -43,11 +43,42 @@
 </nav>
 
 <main>
+  <!-- Mídia (CapCut-style bin): raw footage, this edit's images, brand library.
+       Drop files anywhere on it. Built by renderMedia() in app.js; the agent
+       hears about every upload through preview_media.json. -->
+  <aside id="mediaPanel" class="media-panel glass">
+    <div class="media-head">
+      <span class="group-title">Mídia</span>
+      <button id="mediaCollapse" class="btn ghost small" title="Recolher painel">‹</button>
+    </div>
+    <div class="media-tabs">
+      <button class="media-tab active" data-shelf="project">Projeto</button>
+      <button class="media-tab" data-shelf="library">Marcas</button>
+    </div>
+    <div id="mediaDrop" class="media-drop">
+      <input id="mediaInput" type="file" multiple hidden>
+      <button id="mediaImport" class="btn primary small">+ Importar</button>
+      <span id="mediaHint" class="media-hint">ou arraste arquivos aqui</span>
+    </div>
+    <form id="logoForm" class="logo-form hidden">
+      <img id="logoFormPreview" alt="">
+      <input id="logoName" class="post-input" placeholder="Nome da marca (ex.: NVIDIA)" required>
+      <input id="logoAliases" class="post-input" placeholder="Outros nomes, separados por vírgula">
+      <div class="logo-form-actions">
+        <button type="button" id="logoCancel" class="btn ghost small">Cancelar</button>
+        <button type="submit" class="btn primary small">Salvar na biblioteca</button>
+      </div>
+    </form>
+    <div id="mediaList" class="media-list"></div>
+  </aside>
+  <button id="mediaExpand" class="media-expand hidden" title="Abrir painel de mídia">Mídia ›</button>
+
+  <div class="main-col">
   <section id="emptyState" class="empty glass hidden">
     <div class="empty-inner">
-      <div class="empty-icon">🎬</div>
-      <h2>Aguardando o primeiro render</h2>
-      <p>Assim que o <code>cut.mp4</code> existir, a timeline aparece aqui sozinha.</p>
+      <h2>Aguardando o primeiro corte</h2>
+      <p>Importe o vídeo bruto no painel <b>Mídia</b>, ao lado, e peça ao Claude
+        para começar a edição. A timeline aparece aqui assim que o <code>cut.mp4</code> existir.</p>
     </div>
   </section>
 
@@ -215,6 +246,7 @@
     </section>
   </div>
   </div>
+  </div><!-- /.main-col -->
 
 </main>
 

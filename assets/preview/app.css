@@ -162,7 +162,122 @@ header {
 .tab:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ---------- main ---------- */
-main { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 14px 8px; min-height: 0; }
+main { flex: 1 1 auto; display: flex; flex-direction: row; gap: 10px; padding: 10px 14px 8px; min-height: 0; }
+.main-col { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+.empty p { max-width: 460px; margin: 0 auto; line-height: 1.6; }
+
+/* ---------- Mídia panel (CapCut-style bin) ----------
+   Left of everything, so importing footage and logos is the first thing on the
+   screen — not a chat instruction. Collapses to a slim tab. */
+.media-panel {
+  flex: 0 0 264px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+.media-panel.dragging { border-color: var(--brand-light); background: rgba(139, 92, 246, 0.10); }
+.media-head { display: flex; align-items: center; justify-content: space-between; }
+.media-tabs { display: flex; gap: 4px; background: rgba(0, 0, 0, 0.25); border-radius: 10px; padding: 3px; }
+.media-tab {
+  flex: 1;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.media-tab.active { color: var(--text); background: rgba(139, 92, 246, 0.22); }
+.media-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px dashed rgba(167, 139, 250, 0.4);
+  border-radius: 12px;
+  text-align: center;
+}
+.media-hint { font-size: 11px; color: var(--dim); }
+.media-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+.media-group-title { font-size: 10.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+.media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.media-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--stroke);
+}
+.media-thumb { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: #0a0f1f; }
+/* logos: contain on a LIGHT neutral checker, so the mark is seen exactly as
+   stored — most official logos are dark-on-transparent and vanish on navy */
+.media-card.logo .media-thumb {
+  object-fit: contain;
+  padding: 10px;
+  background:
+    conic-gradient(#f1f2f5 25%, #e3e5ea 0 50%, #f1f2f5 0 75%, #e3e5ea 0) 0 0 / 14px 14px;
+}
+.media-name {
+  font-size: 11px;
+  padding: 5px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.media-sub { font-size: 10px; color: var(--dim); padding: 0 7px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.media-del {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  border: 0;
+  background: rgba(6, 10, 22, 0.8);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.media-card:hover .media-del { opacity: 1; }
+.media-empty { font-size: 12px; color: var(--dim); line-height: 1.5; }
+.logo-form { display: flex; flex-direction: column; gap: 7px; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--stroke); }
+.logo-form img { max-height: 70px; object-fit: contain; align-self: center; }
+.logo-form .post-input { font-size: 12.5px; padding: 8px 10px; }
+.logo-form-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.media-expand {
+  writing-mode: vertical-rl;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--dim);
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 12px 6px;
+  cursor: pointer;
+}
+.media-expand:hover { color: var(--text); }
+body.media-collapsed .media-panel { display: none; }
+@media (max-width: 1100px) { .media-panel { flex-basis: 220px; } }
 
 .empty { flex: 1; display: flex; align-items: center; justify-content: center; }
 .empty-inner { text-align: center; padding: 40px; }

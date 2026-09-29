@@ -44,6 +44,10 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, quote, unquote
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import brand_library  # noqa: E402  (stdlib-only sibling helper)
 
 APP_DIR = Path(__file__).resolve().parent.parent / "assets" / "preview"
 PEAKS_PER_SEC = 40
@@ -58,7 +62,11 @@ MIME = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".webp": "image/webp",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
     ".mp4": "video/mp4",
+    ".m4v": "video/mp4",
+    ".webm": "video/webm",
     ".mov": "video/quicktime",
     ".mp3": "audio/mpeg",
     ".srt": "text/plain; charset=utf-8",
@@ -224,12 +232,27 @@ class Handler(BaseHTTPRequestHandler):
             self._thumbs(path[len("/gen/thumbs/"):])
         elif path == "/api/state":
             self._state()
+        elif path == "/api/media":
+            self._media_list()
+        elif path.startswith("/raw/"):
+            p = self._safe(self._raw_dir(), unquote(path[len("/raw/"):]))
+            self._send_file(p) if p else self._json({"error": "bad path"}, 400)
+        elif path.startswith("/library/"):
+            p = self._safe(brand_library.LIB, unquote(path[len("/library/"):]))
+            self._send_file(p) if p else self._json({"error": "bad path"}, 400)
         else:
             self._json({"error": "unknown route"}, 404)
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path.split("?", 1)[0] == "/api/export":
+        route = self.path.split("?", 1)[0]
+        if route == "/api/export":
             self._export()
+            return
+        if route == "/api/upload":
+            self._upload()
+            return
+        if route == "/api/library/delete":
+            self._library_delete()
             return
         if self.path.split("?", 1)[0] != "/api/save":
             self._json({"error": "unknown route"}, 404)
@@ -254,6 +277,108 @@ class Handler(BaseHTTPRequestHandler):
         tmp.write_text(json.dumps(body, ensure_ascii=False, indent=2))
         tmp.replace(out)
         self._json({"ok": True, "file": str(out)})
+
+    # ---- media panel (CapCut-style bin) ----
+    # Three shelves: the raw footage folder, this edit's own images/clips
+    # (<edit>/media/), and the brand-logo library shared by every edit.
+    VIDEO_EXT = {".mp4", ".mov", ".m4v", ".mkv", ".webm"}
+
+    def _media_list(self) -> None:
+        raw = self._raw_dir()
+        sources = [{"name": p.name, "url": f"/raw/{quote(p.name)}", "size": p.stat().st_size}
+                   for p in sorted(raw.iterdir())
+                   if p.is_file() and p.suffix.lower() in self.VIDEO_EXT] if raw.is_dir() else []
+        md = self.root / "media"
+        project = [{"name": p.name, "url": f"/media/media/{quote(p.name)}", "size": p.stat().st_size,
+                    "kind": "video" if p.suffix.lower() in self.VIDEO_EXT else "image"}
+                   for p in sorted(md.iterdir())
+                   if p.is_file() and not p.name.startswith(".")] if md.is_dir() else []
+        library = [{"slug": s, "name": e["name"], "aliases": e.get("aliases", []),
+                    "source": e.get("source", ""),
+                    "url": f"/library/logos/{quote(e['file'])}"}
+                   for s, e in sorted(brand_library.load().items())
+                   if (brand_library.LOGOS / e["file"]).exists()]
+        self._json({"rawDir": str(raw), "sources": sources, "project": project, "library": library})
+
+    def _upload(self) -> None:
+        """Raw body upload, streamed to disk. ?scope=source|project|library
+        &filename=…  (+ &name=…&aliases=… for library)."""
+        q = {k: v[0] for k, v in parse_qs(self.path.split("?", 1)[1] if "?" in self.path else "").items()}
+        scope = q.get("scope", "project")
+        fname = re.sub(r"[^\w.\- ]", "_", Path(q.get("filename", "")).name, flags=re.U).strip() or "arquivo"
+        ext = Path(fname).suffix.lower()
+        length = int(self.headers.get("Content-Length", "0"))
+        if scope == "library":
+            if ext not in brand_library.IMAGE_EXT:
+                self._drain(length)
+                self._json({"error": "logo precisa ser PNG, SVG, WEBP ou JPG"}, 400)
+                return
+            name = (q.get("name") or Path(fname).stem).strip()
+            data = self.rfile.read(length)
+            e = brand_library.add(Path(fname), name, (q.get("aliases") or "").split(","),
+                                  source="upload", data=data)
+            self._media_event({"scope": "library", "name": e["name"], "file": e["file"],
+                               "aliases": e["aliases"]})
+            self._json({"ok": True, "entry": e})
+            return
+        if scope == "source":
+            if ext not in self.VIDEO_EXT:
+                self._drain(length)
+                self._json({"error": "vídeo bruto precisa ser MP4, MOV, M4V, MKV ou WEBM"}, 400)
+                return
+            dest_dir = self._raw_dir()
+        else:
+            dest_dir = self.root / "media"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / fname
+        n = 1
+        while dest.exists():  # never overwrite footage or a previous upload
+            dest = dest_dir / f"{Path(fname).stem} ({n}){ext}"
+            n += 1
+        tmp = dest.with_name(dest.name + ".part")
+        with open(tmp, "wb") as f:
+            remaining = length
+            while remaining > 0:
+                chunk = self.rfile.read(min(1 << 20, remaining))
+                if not chunk:
+                    break
+                f.write(chunk)
+                remaining -= len(chunk)
+        if remaining:
+            tmp.unlink(missing_ok=True)
+            self._json({"error": "upload interrompido"}, 400)
+            return
+        tmp.replace(dest)
+        self._media_event({"scope": scope, "file": str(dest)})
+        self._json({"ok": True, "path": str(dest)})
+
+    def _library_delete(self) -> None:
+        try:
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
+        except (ValueError, json.JSONDecodeError):
+            self._json({"error": "invalid JSON"}, 400)
+            return
+        ok = brand_library.remove(str(body.get("slug", "")))
+        self._json({"ok": ok} if ok else {"error": "logo não encontrada"}, 200 if ok else 404)
+
+    def _drain(self, length: int) -> None:
+        while length > 0:
+            chunk = self.rfile.read(min(1 << 20, length))
+            if not chunk:
+                break
+            length -= len(chunk)
+
+    def _media_event(self, ev: dict) -> None:
+        """Append to <edit>/preview_media.json so watch_edits.py tells the agent."""
+        p = self.root / "preview_media.json"
+        try:
+            items = json.loads(p.read_text()).get("items", []) if p.exists() else []
+        except (OSError, json.JSONDecodeError):
+            items = []
+        items.append({**ev, "at": time.strftime("%H:%M:%S")})
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"type": "media-added", "items": items}, ensure_ascii=False, indent=2))
+        tmp.replace(p)
 
     # ---- export: "Salvar vídeo" on the Fase-2 tab ----
     def _export(self) -> None:

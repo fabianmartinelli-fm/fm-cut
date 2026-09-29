@@ -7,6 +7,10 @@ __pycache__/
 # secrets — optional API keys live here, never commit it
 .env
 
+# the user's brand-logo library is their data, not the repo's
+library/*
+!library/README.md
+
 # local tooling
 node_modules/
 .DS_Store
