@@ -17,7 +17,8 @@ approved. Everything here rides on the **data-driven template** at
   reveals an edge). `zoomCuts` is what makes a talking head feel edited — if the
   user turns everything off, say what they lose and build it anyway.
 - **Visual hook (first ~4s):** static copywriting headline, **always two lines**
-  with the size fitted to them (see "Headline styles"). On by default, but the
+  with the size fitted to them (see "Headline styles"). It is the video's
+  cover: on screen from frame 0 and it names the video's subject. On by default, but the
   Estilo tab offers "Nenhum" — respect it and set `hook.enabled: false`.
 - **Captions:** six styles — three animated (**karaoke**, **stacked**, **scatter**)
   and three static (**simples**, **serifada**, **classica**) — plus "Nenhum",
@@ -289,11 +290,30 @@ cues must match the transcript exactly, in order.
 
 ## Visual hook — static headline, first ~4s (always on)
 
-The first 1–2 seconds decide the swipe. Write `hook.lines` like a
-social-media/copywriting/virality specialist, not a summarizer: read the cut
-transcript, find the core promise/tension, and craft a scroll-stopper. Levers:
-**curiosity gap · high stakes/bold claim · specificity/number · urgency ·
-pattern interrupt**. Match the video's language; never clickbait it can't pay off.
+**The headline is the video's COVER.** The feed and the profile grid show frame
+0, so the headline is on screen, fully legible, from frame 0 — the template has
+no entry animation for it (a legibility scrim behind it, when the edit adds
+one in `CustomGraphics.tsx`, must also be on from frame 0).
+Someone who never presses play must know what the video is about from that one
+frame.
+
+So the hook has two jobs, in this order:
+
+1. **Name the subject.** The hottest, most concrete thing in the video — the
+   launch, the product, the brand, the number — goes IN the headline, early,
+   by name ("Dots: o agente do ChatGPT que trabalha sozinho"). A clever line that
+   hides the subject fails as a cover. Measured on a real edit: "O ChatGPT agora
+   trabalha sem você abrir o chat" was well written and still wrong, because the
+   video was about the Dots launch and the cover never said "Dots".
+2. **Then make it a scroll-stopper.** Write like a social-media/copywriting/
+   virality specialist, not a summarizer. Levers: **curiosity gap · high
+   stakes/bold claim · specificity/number · urgency · pattern interrupt**. Match
+   the video's language; never clickbait it can't pay off.
+
+Keep it short so the fit can run it big: raise `hook.maxFontPx` (a ceiling) when
+the two lines leave most of the 900px safe width empty — a cover read at
+thumbnail size needs the type large. Render `--frame=0` and judge it as a
+thumbnail.
 
 **Two locked styles via `hook.style`** (both user-approved, encoded in the
 template):
@@ -309,7 +329,8 @@ template):
   head, which is fine). The TikTok/MrBeast headline look. Tune `fontSizePx` (51),
   `strokePx` (7), `paddingTop` (330), `lineHeight` (1.06). Drop logo/sign.
 
-Both are static hold, fade+rise at the edges, soft whoosh.
+All styles are a static hold: on screen from frame 0 (it is the cover), fade
+out at `endSec`, soft whoosh at the start.
 
 Example (Claude Fable video): "A IA MAIS / PERIGOSA DO MUNDO / ACABOU DE SER
 LIBERADA". Draft 2–3 copy candidates in chat (text — no renders), let the user

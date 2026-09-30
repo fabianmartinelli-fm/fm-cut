@@ -62,6 +62,7 @@ export type EditData = {
     // "realce": each line on its own solid orange marker block.
     // "misto": line 1 light white, line 2 heavy orange.
     style?: 'outline' | 'card' | 'realce' | 'misto';
+    accent?: string;       // realce/misto paint (Estilo card pick; default #ff5200)
     fontSizePx?: number;   // auto-fit CEILING (alias of maxFontPx, kept for compat)
     maxFontPx?: number;    // auto-fit ceiling (per-style default)
     safeWidth?: number;    // auto-fit width budget (per-style default)
@@ -417,7 +418,9 @@ const Soundtrack: React.FC = () => {
 //     logo + symbol row above.
 //   "realce": each line on its own solid orange marker block.
 //   "misto": line 1 light white, line 2 heavy orange.
-// All static (fade + rise only) with a soft whoosh on entry. Tunables:
+// The FIRST FRAME IS THE COVER: the feed and the profile grid show frame 0, so
+// the headline is fully on screen from frame 0 — no fade or rise in, only a
+// fade out at endSec. A soft whoosh plays at the start. Tunables:
 // fontSizePx / maxFontPx (ceiling for the fit — NOT a fixed size), safeWidth,
 // strokePx, paddingTop, lineHeight.
 // ---- ALWAYS two lines, size fitted to them ----------------------------------
@@ -474,10 +477,10 @@ function fitHeadline(lines: [string, string], s: HlStyle): number {
 const HookInner: React.FC<{totalFrames: number}> = ({totalFrames}) => {
   const f = useCurrentFrame();
   const H = D.hook;
-  const enter = interpolate(f, [0, 8], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic)});
-  const exit = interpolate(f, [totalFrames - 9, totalFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const op = Math.min(enter, exit);
-  const y = interpolate(enter, [0, 1], [24, 0]);
+  // no entry animation: frame 0 is the video's cover and must already read
+  const op = interpolate(f, [totalFrames - 9, totalFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const y = 0;
+  const accent = H.accent ?? '#ff5200';
 
   const styleId = H.style ?? 'outline';
   const S = HL_STYLES[styleId] ?? HL_STYLES.outline;
@@ -512,7 +515,7 @@ const HookInner: React.FC<{totalFrames: number}> = ({totalFrames}) => {
             <div
               key={i}
               style={{
-                background: '#ff5200',
+                background: accent,
                 color: '#fff',
                 fontWeight: 900,
                 fontSize: size,
@@ -535,7 +538,7 @@ const HookInner: React.FC<{totalFrames: number}> = ({totalFrames}) => {
         <Sfx src="whoosh.mp3" volume={0.1} />
         <div style={{...shell, filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.55))'}}>
           <div style={{fontWeight: 400, fontSize: size, color: '#fff'}}>{lines[0]}</div>
-          <div style={{fontWeight: 900, fontSize: size, color: '#ff5200'}}>{lines[1]}</div>
+          <div style={{fontWeight: 900, fontSize: size, color: accent}}>{lines[1]}</div>
         </div>
       </AbsoluteFill>
     );
