@@ -111,6 +111,14 @@ def too_brief(w: dict) -> bool:
     return (w["endMs"] - w["startMs"]) < MIN_SOLO_MS
 
 
+def ends_sentence(w: dict) -> bool:
+    """A full stop is a hard wall between cues. A sentence end is where the
+    Phase-1 takes meet, so a cue that carries the last word of one sentence into
+    the next straddles a cut: on a split screen it jumps to the seam while the
+    previous take is still full frame and sits on the speaker's forehead."""
+    return w["text"].rstrip("\"'").endswith((".", "!", "?", "…"))
+
+
 def unsolo(w: dict) -> bool:
     """Should this one-word cue be folded into a neighbour instead of standing alone?"""
     return is_degenerate(w) or too_brief(w)
@@ -140,6 +148,7 @@ def group_cues(words: list[dict]) -> list[list[dict]]:
             and unsolo(cw[0])
             and merged
             and len(merged[-1]) < MAX_WORDS
+            and not ends_sentence(merged[-1][-1])
             and cw[0]["startMs"] - merged[-1][-1]["endMs"] <= PAUSE_MS
         ):
             merged[-1].append(cw[0])
@@ -152,6 +161,7 @@ def group_cues(words: list[dict]) -> list[list[dict]]:
         if (
             len(cw) == 1
             and unsolo(cw[0])
+            and not ends_sentence(cw[0])
             and i + 1 < len(merged)
             and len(merged[i + 1]) < MAX_WORDS
             and merged[i + 1][0]["startMs"] - cw[0]["endMs"] <= PAUSE_MS
@@ -168,7 +178,8 @@ def group_cues(words: list[dict]) -> list[list[dict]]:
         if len(cw) > 1:
             gap = nxt[0]["startMs"] - cw[-1]["endMs"]
             remaining_ok = len(cw) > 2 or not is_degenerate(cw[0])
-            if gap <= PAUSE_MS and cw[-1]["startMs"] > nxt[0]["startMs"] - 260 and remaining_ok:
+            if (gap <= PAUSE_MS and cw[-1]["startMs"] > nxt[0]["startMs"] - 260 and remaining_ok
+                    and not ends_sentence(cw[-1])):
                 nxt.insert(0, cw.pop())
     return fixed
 
